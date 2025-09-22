@@ -13,54 +13,87 @@ OLLAMA_MODEL = "gemma3:270m"
 # -------------------------------
 # Resume Enhancement Prompts (CAG-style)
 # -------------------------------
+
 resume_prompts = {
     "summary": (
-        "You are an expert resume consultant. "
+        "You are an expert resume consultant and professional proofreader. "
         "Enhance the Professional Summary/Objective for a user. "
-        "Keep it polished, concise, employer-focused, and aligned with the user's actual skills and experience. "
+        "Correct any spelling mistakes and improve clarity, conciseness, and employer focus. "
         "Do NOT add any experience the user does not have. "
-        "Return only one improved version of the text with no prefixes, headings, or commentary."
+        "If the text is already correct, polish style and readability without changing meaning. "
+        "If the input is empty, return a neutral, professional summary template. "
+        "Limit the summary to approximately 50-70 words, adjusting naturally to the input length. "
+        "Always produce a polished, professional, and improved version of the content, even if the input is short or average. "
+        "Use a confident, professional tone suitable for resumes. "
+        "Return only the improved and corrected text with no prefixes, headings, or commentary."
     ),
+
     "experience": (
+        "You are an expert resume consultant and professional proofreader. "
         "Enhance the Work Experience section to highlight achievements, responsibilities, and measurable impact. "
+        "Correct any spelling mistakes. "
         "Use action verbs and quantify results where possible. "
         "Do NOT add any experience the user does not have. "
+        "Limit the section to approximately 70-120 words, adjusting naturally to the input length. "
+        "Always produce a polished, professional version. "
         "Return only one improved version with no prefixes, headings, or commentary."
     ),
+
     "skills": (
+        "You are an expert resume consultant and professional proofreader. "
         "Improve the Skills section to be concise, organized, and impressive. "
+        "Correct any spelling mistakes. "
         "Group skills logically, include technical and soft skills, and remove redundancy. "
         "Do NOT add any skills the user does not have. "
         "Return one comma-separated list with no prefixes or headings."
     ),
+
     "education": (
+        "You are an expert resume consultant and professional proofreader. "
         "Rewrite the Education section to clearly present degrees, certifications, and relevant coursework. "
+        "Correct any spelling mistakes. "
         "Focus on what supports the user's career goals. "
         "Do NOT add any degrees or certifications the user does not have. "
+        "Limit the section to approximately 50-100 words, adjusting naturally to input length. "
         "Return only one improved version with no prefixes or headings."
     ),
+
     "projects": (
+        "You are an expert resume consultant and professional proofreader. "
         "Enhance the Projects section to present scope, technologies, contributions, and measurable impact. "
+        "Correct any spelling mistakes. "
         "Do NOT add any projects the user has not completed. "
+        "Limit the section to approximately 50-100 words, adjusting naturally to input length. "
         "Return only one polished version with no prefixes or headings."
     ),
+
     "certifications": (
+        "You are an expert resume consultant and professional proofreader. "
         "Improve the Certifications section to highlight relevant certifications and their impact. "
+        "Correct any spelling mistakes. "
         "Do NOT add any certifications the user does not have. "
+        "Limit the section to approximately 30-60 words, adjusting naturally to input length. "
         "Return only one improved version with no prefixes or headings."
     ),
+
     "achievements": (
+        "You are an expert resume consultant and professional proofreader. "
         "Enhance the Achievements section to highlight awards, recognitions, or accomplishments. "
+        "Correct any spelling mistakes. "
         "Do NOT add any achievements the user does not have. "
+        "Limit the section to approximately 40-80 words, adjusting naturally to input length. "
         "Return one concise, quantifiable, professional version with no prefixes or headings."
     ),
-    "hobbies": (
-        "Improve the Hobbies/Interests section to be professional, relevant, and reflective of skills. "
-        "Do NOT add hobbies the user does not have. "
-        "Return only one improved version with no prefixes or headings."
-    ),
-}
 
+    "hobbies": (
+        "You are an expert resume consultant and professional proofreader. "
+        "Improve the Hobbies/Interests section to be professional, relevant, and reflective of skills. "
+        "Correct any spelling mistakes. "
+        "Do NOT add hobbies the user does not have. "
+        "Limit the section to approximately 20-50 words, adjusting naturally to input length. "
+        "Return only one improved version with no prefixes or headings."
+    )
+}
 # -------------------------------
 # Helper Functions
 # -------------------------------
@@ -94,7 +127,7 @@ def enhance_section(section_name, user_input):
             "Enhanced:",
             "Here is the improved text:",
             "Here's the enhanced version:",
-            "Here's a polished and concise resume summary/objective tailored for a user:"
+            ##"Here's a polished and concise resume summary/objective tailored for a user:"
         ]
         for p in prefixes:
             if enhanced_text.startswith(p):
@@ -106,13 +139,13 @@ def enhance_section(section_name, user_input):
         return enhanced_text if enhanced_text else user_input
 
     except subprocess.TimeoutExpired:
-        print(f"⏳ Timeout enhancing {section_name}")
+        print(f" Timeout enhancing {section_name}")
         return user_input
     except subprocess.CalledProcessError as e:
-        print(f"❌ Ollama error for {section_name}: {e.stderr}")
+        print(f"Ollama error for {section_name}: {e.stderr}")
         return user_input
     except Exception as e:
-        print(f"⚠️ Unexpected error enhancing {section_name}: {str(e)}")
+        print(f"Unexpected error enhancing {section_name}: {str(e)}")
         return user_input
 
 
@@ -198,5 +231,5 @@ def internal_error(error):
 # Main
 # -------------------------------
 if __name__ == "__main__":
-    print("🚀 Starting Flask app on http://localhost:5000")
+    print("Starting Flask app on http://localhost:5000")
     app.run(debug=True, host='0.0.0.0', port=5000)
