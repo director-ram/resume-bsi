@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, send_file, jsonify, redirect, url_for, session
+import re
 import subprocess
 from docx import Document
 import os
@@ -148,23 +149,16 @@ def enhance_section(section_name, user_input):
             if enhanced_text.startswith(p):
                 enhanced_text = enhanced_text[len(p):].strip()
 
-        # If the model echoed the prompt, keep only content after the last 'Improved Content:' marker
-        if "Improved Content:" in enhanced_text:
-            enhanced_text = enhanced_text.split("Improved Content:")[-1].strip()
+        # 1) Keep only content after the last 'Improved Content:' marker (case-insensitive)
+        if re.search(r"improved\s*content\s*:", enhanced_text, flags=re.IGNORECASE):
+            parts = re.split(r"improved\s*content\s*:", enhanced_text, flags=re.IGNORECASE)
+            enhanced_text = parts[-1].strip()
 
-        # Strip any echoed 'Global Editing Rules' block
-        if enhanced_text.lower().startswith("global editing rules"):
-            lines = enhanced_text.splitlines()
-            cleaned = []
-            skip = True
-            for ln in lines:
-                if skip and not ln.strip():
-                    skip = False
-                    continue
-                if skip:
-                    continue
-                cleaned.append(ln)
-            enhanced_text = "\n".join(cleaned).strip()
+        # 2) Remove any echoed 'Global Editing Rules' block anywhere
+        enhanced_text = re.sub(r"^\s*global\s+editing\s+rules:?[\s\S]*?(?:\n\s*user\s+input\s*:\s*|$)", "", enhanced_text, flags=re.IGNORECASE)
+
+        # 3) Remove any echoed 'User Input:' header if present
+        enhanced_text = re.sub(r"^\s*user\s+input\s*:\s*", "", enhanced_text, flags=re.IGNORECASE)
 
         # Remove any explanation lines the model may add
         lines = [ln.rstrip() for ln in enhanced_text.splitlines()]
