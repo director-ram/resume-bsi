@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Resume - Education</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%); background-size: 400% 400%; animation: gradientShift 15s ease infinite; min-height: 100vh; color: #2d3748; }
+        @keyframes gradientShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        .container { max-width: 1100px; margin: 0 auto; min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+        .header { background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.2); padding: 1rem 2rem; text-align: center; color: white; position: sticky; top: 0; z-index: 100; }
+        .header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .main { padding: 2rem; }
+        .card { background: rgba(255,255,255,0.95); border-radius: 20px; padding: 1.5rem; backdrop-filter: blur(20px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.3); }
+        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.025em; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+        .btn-secondary { background: rgba(255,255,255,0.9); color: #4a5568; border: 2px solid #e2e8f0; }
+        .btn-enhance { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: white; box-shadow: 0 4px 15px rgba(245,158,11,0.4); padding: 0.5rem 1rem; font-size: 0.8rem; }
+        .btn-enhance:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(245,158,11,0.6); }
+        .actions { display: flex; gap: .5rem; margin-top: 1rem; }
+        .enhance-section { margin-top: 1rem; text-align: center; }
+        textarea { width: 100%; min-height: 200px; padding: 0.875rem 1rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; background: #f8fafc; font-family: inherit; }
+        textarea:focus { outline: none; border-color: #667eea; background: white; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); transform: translateY(-1px); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Professional Resume Builder</h1>
+        </header>
+        <main class="main">
+            <div class="card">
+                <h2 style="margin-bottom: .75rem;">Education</h2>
+                <form method="post">
+                    <textarea name="education" placeholder="Degrees, institutions, years, highlights...">{{ data.education }}</textarea>
+                    <div class="enhance-section">
+                        <button class="btn btn-enhance" type="button" onclick="enhance()">✨ AI Enhance</button>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-primary" type="submit">Save & Continue</button>
+                        <a class="btn btn-secondary" href="/resume/experience">Back</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+    <script>
+        async function enhance(){
+            const content = document.querySelector('textarea[name="education"]').value;
+            const res = await fetch('/enhance', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ section:'education', content }) });
+            const json = await res.json();
+            if(json.success){ document.querySelector('textarea[name="education"]').value = json.enhanced_content; }
+        }
+    </script>
+</body>
+</html>
+
+
