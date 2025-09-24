@@ -148,6 +148,24 @@ def enhance_section(section_name, user_input):
             if enhanced_text.startswith(p):
                 enhanced_text = enhanced_text[len(p):].strip()
 
+        # If the model echoed the prompt, keep only content after the last 'Improved Content:' marker
+        if "Improved Content:" in enhanced_text:
+            enhanced_text = enhanced_text.split("Improved Content:")[-1].strip()
+
+        # Strip any echoed 'Global Editing Rules' block
+        if enhanced_text.lower().startswith("global editing rules"):
+            lines = enhanced_text.splitlines()
+            cleaned = []
+            skip = True
+            for ln in lines:
+                if skip and not ln.strip():
+                    skip = False
+                    continue
+                if skip:
+                    continue
+                cleaned.append(ln)
+            enhanced_text = "\n".join(cleaned).strip()
+
         # Remove any explanation lines the model may add
         lines = [ln.rstrip() for ln in enhanced_text.splitlines()]
         filtered_lines = [
