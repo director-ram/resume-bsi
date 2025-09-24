@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, send_file, jsonify
+from flask import Flask, render_template, request, send_file, jsonify, redirect, url_for, session
 import subprocess
 from docx import Document
 import os
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-me")
 
 # -------------------------------
 # Configurable Ollama model
@@ -17,15 +18,12 @@ OLLAMA_MODEL = "gemma3:270m"
 resume_prompts = {
     "summary": (
         "You are an expert resume consultant and professional proofreader. "
-        "Enhance the Professional Summary/Objective for a user. "
-        "Correct any spelling mistakes and improve clarity, conciseness, and employer focus. "
-        "Do NOT add any experience the user does not have. "
-        "If the text is already correct, polish style and readability without changing meaning. "
-        "If the input is empty, return a neutral, professional summary template. "
-        "Limit the summary to approximately 50-70 words, adjusting naturally to the input length. "
-        "Always produce a polished, professional, and improved version of the content, even if the input is short or average. "
-        "Use a confident, professional tone suitable for resumes. "
-        "Return only the improved and corrected text with no prefixes, headings, or commentary."
+        "Enhance the Professional Summary/Objective. "
+        "Correct spelling and improve clarity, but do NOT invent experience. "
+        "Use a confident, employer-focused tone. "
+        "Output 3-5 sentences, each on a new line (min 3 lines). "
+        "If input is empty, produce a neutral professional template (3 lines). "
+        "Return only the improved text with no prefixes or headings."
     ),
 
     "experience": (
@@ -50,21 +48,19 @@ resume_prompts = {
 
     "education": (
         "You are an expert resume consultant and professional proofreader. "
-        "Rewrite the Education section to clearly present degrees, certifications, and relevant coursework. "
-        "Correct any spelling mistakes. "
-        "Focus on what supports the user's career goals. "
-        "Do NOT add any degrees or certifications the user does not have. "
-        "Limit the section to approximately 50-100 words, adjusting naturally to input length. "
-        "Return only one improved version with no prefixes or headings."
+        "Rewrite Education clearly and concisely. "
+        "Correct spelling. Do NOT add details (e.g., GPA, honors, coursework) unless explicitly present. "
+        "Preserve exact degree titles and institution names; do not infer. "
+        "Limit to 2-3 compact sentences total. "
+        "Return only the improved text with no prefixes or headings."
     ),
 
     "projects": (
         "You are an expert resume consultant and professional proofreader. "
-        "Enhance the Projects section to present scope, technologies, contributions, and measurable impact. "
-        "Correct any spelling mistakes. "
-        "Do NOT add any projects the user has not completed. "
-        "Limit the section to approximately 50-100 words, adjusting naturally to input length. "
-        "Return only one polished version with no prefixes or headings."
+        "Enhance each project while preserving the number of projects and their order. "
+        "Input format: one project per line. Output format: one improved project per line (same count). "
+        "Do NOT add or remove projects. Correct spelling, highlight scope, tech, contributions, and impact. "
+        "Return only the improved lines with no prefixes or headings."
     ),
 
     "certifications": (
@@ -106,7 +102,19 @@ def enhance_section(section_name, user_input):
     if section_key not in resume_prompts:
         return user_input
 
-    combined_prompt = f"{resume_prompts[section_key]}\n\nUser Input:\n{user_input}\n\nImproved Content:"
+    global_rules = (
+        "Global Editing Rules:\n"
+        "- Correct all spelling, grammar, and punctuation.\n"
+        "- Standardize capitalization and spacing.\n"
+        "- Keep original meaning; do not invent content.\n"
+        "- Prefer concise, professional wording.\n"
+        "- Do NOT explain what changed; output only the final improved content.\n"
+    )
+
+    combined_prompt = (
+        f"{global_rules}\n{resume_prompts[section_key]}\n\n"
+        f"User Input:\n{user_input}\n\nImproved Content:"
+    )
 
     try:
         result = subprocess.run(
@@ -114,7 +122,7 @@ def enhance_section(section_name, user_input):
             capture_output=True,
             text=True,
             check=True,
-            timeout=60
+            timeout=90
         )
         enhanced_text = result.stdout.strip()
 
@@ -127,14 +135,42 @@ def enhance_section(section_name, user_input):
             "Enhanced:",
             "Here is the improved text:",
             "Here's the enhanced version:",
+            "Explanation of changes:",
+            "Explanation:",
+            "Notes:",
             ##"Here's a polished and concise resume summary/objective tailored for a user:"
         ]
         for p in prefixes:
             if enhanced_text.startswith(p):
                 enhanced_text = enhanced_text[len(p):].strip()
 
-        # Remove markdown bullets or extra asterisks
-        enhanced_text = enhanced_text.replace("*", "").strip()
+        # Remove any explanation lines the model may add
+        lines = [ln.rstrip() for ln in enhanced_text.splitlines()]
+        filtered_lines = [
+            ln for ln in lines
+            if not ln.strip().lower().startswith((
+                "explanation of changes",
+                "explanation:",
+                "changes:",
+                "what changed:",
+                "here's what i changed",
+                "notes:",
+                "rationale:",
+            ))
+        ]
+        enhanced_text = "\n".join(filtered_lines).strip()
+
+        # Preserve bullets/asterisks; trim whitespace only
+        enhanced_text = enhanced_text.strip()
+
+        # Normalize skills output to comma-separated list without labels
+        if section_key == "skills":
+            lines = [ln.strip().lstrip("-•*") for ln in enhanced_text.splitlines() if ln.strip()]
+            filtered = [ln for ln in lines if not ln.lower().startswith(("explanation", "note", "reason", "changes"))]
+            text = ", ".join(filtered)
+            if text.lower().startswith("skills:"):
+                text = text[7:].strip()
+            enhanced_text = text
 
         return enhanced_text if enhanced_text else user_input
 
@@ -215,6 +251,112 @@ def health_check():
         return jsonify({'status': 'healthy', 'ollama_running': True, 'model_available': model_available})
     except Exception as e:
         return jsonify({'status': 'unhealthy', 'ollama_running': False, 'error': str(e)}), 500
+
+# -------------------------------
+# Plan Pages - Routes
+# -------------------------------
+def _get_resume_data():
+    return session.setdefault("resume_data", {
+        "summary": "",
+        "experience": "",
+        "education": "",
+        "skills": "",
+        "projects": "",
+    })
+
+
+# -------------------------------
+# Multi-step Resume Flow
+# -------------------------------
+@app.route("/start")
+def start_resume_flow():
+    session["resume_data"] = _get_resume_data()
+    return redirect(url_for("resume_summary"))
+
+
+@app.route("/resume/summary", methods=["GET", "POST"])
+def resume_summary():
+    data = _get_resume_data()
+    if request.method == "POST":
+        data["summary"] = request.form.get("summary", "")
+        session.modified = True
+        return redirect(url_for("resume_experience"))
+    return render_template("resume_summary.html", data=data)
+
+
+@app.route("/resume/experience", methods=["GET", "POST"])
+def resume_experience():
+    data = _get_resume_data()
+    if request.method == "POST":
+        data["experience"] = request.form.get("experience", "")
+        session.modified = True
+        return redirect(url_for("resume_education"))
+    return render_template("resume_experience.html", data=data)
+
+
+@app.route("/resume/education", methods=["GET", "POST"])
+def resume_education():
+    data = _get_resume_data()
+    if request.method == "POST":
+        data["education"] = request.form.get("education", "")
+        session.modified = True
+        return redirect(url_for("resume_skills"))
+    return render_template("resume_education.html", data=data)
+
+
+@app.route("/resume/skills", methods=["GET", "POST"])
+def resume_skills():
+    data = _get_resume_data()
+    if request.method == "POST":
+        data["skills"] = request.form.get("skills", "")
+        session.modified = True
+        return redirect(url_for("resume_projects"))
+    return render_template("resume_skills.html", data=data)
+
+
+@app.route("/resume/projects", methods=["GET", "POST"])
+def resume_projects():
+    data = _get_resume_data()
+    if request.method == "POST":
+        data["projects"] = request.form.get("projects", "")
+        session.modified = True
+        return redirect(url_for("resume_review"))
+    return render_template("resume_projects.html", data=data)
+
+
+@app.route("/resume/review", methods=["GET", "POST"])
+def resume_review():
+    data = _get_resume_data()
+    if request.method == "POST":
+        enhanced = {}
+        for section in ["summary", "experience", "education", "skills", "projects"]:
+            enhanced[section] = enhance_section(section, data.get(section, ""))
+        filename = save_resume_docx(enhanced)
+        return render_template("resume_done.html", enhanced_resume=enhanced, download_file=filename)
+    return render_template("resume_review.html", data=data)
+
+
+@app.route("/resume/final-edit", methods=["POST"])
+def resume_final_edit():
+    """Handle final editing of enhanced resume content"""
+    try:
+        # Get the edited content from the form
+        final_resume = {}
+        for section in ["summary", "experience", "education", "skills", "projects"]:
+            final_resume[section] = request.form.get(section, "")
+        
+        # Save the final edited resume
+        filename = save_resume_docx(final_resume)
+        
+        # Return success message with download link
+        return render_template("resume_done.html", 
+                             enhanced_resume=final_resume, 
+                             download_file=filename,
+                             final_edited=True)
+    except Exception as e:
+        return render_template("resume_done.html", 
+                             enhanced_resume={}, 
+                             error=f"Error saving final resume: {str(e)}")
 
 # -------------------------------
 # Error Handlers
