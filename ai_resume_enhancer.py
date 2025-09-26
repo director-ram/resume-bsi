@@ -88,4 +88,3 @@ def save_resume_docx(enhanced_resume, filename="Enhanced_Resume.docx"):
     doc.save(filename)
     return filename
 
-#

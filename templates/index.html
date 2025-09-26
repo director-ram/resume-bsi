@@ -39,7 +39,7 @@
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 2rem;
+            padding: 1rem 2rem;
             text-align: center;
             color: white;
             position: sticky;
@@ -48,16 +48,16 @@
         }
 
         .header h1 {
-            font-size: 2.5rem;
+            font-size: 1.8rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         .header p {
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             opacity: 0.9;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
 
         .progress-container {
@@ -246,6 +246,11 @@
             align-items: center;
             margin-bottom: 1rem;
             flex-wrap: wrap;
+        }
+
+        .enhance-section {
+            margin-top: 1rem;
+            text-align: center;
         }
 
         .controls {
@@ -632,9 +637,6 @@
                 <div class="section-card">
                     <div class="section-controls">
                         <h3 class="section-title">Personal Information</h3>
-                        <button type="button" class="btn btn-enhance" onclick="enhanceSection('summary')" id="enhanceSummaryBtn">
-                            Enhance Summary
-                        </button>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -664,6 +666,11 @@
                         <label for="summary">Professional Summary</label>
                         <textarea id="summary" placeholder="Brief summary of your professional background and key achievements..."></textarea>
                     </div>
+                    <div class="enhance-section">
+                        <button type="button" class="btn btn-enhance" onclick="enhanceSection('summary')" id="enhanceSummaryBtn">
+                            ✨ AI Enhance Summary
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Work Experience -->
@@ -671,15 +678,17 @@
                     <div class="section-controls">
                         <h3 class="section-title">Work Experience</h3>
                         <button type="button" class="btn btn-add" onclick="addExperience()">Add Experience</button>
-                        <button type="button" class="btn btn-enhance" onclick="enhanceAllExperience()" id="enhanceExpBtn">
-                            Enhance All
-                        </button>
                     </div>
                     <div id="experienceContainer">
                         <div class="empty-state">
                             <div class="empty-state-icon">💼</div>
                             <p>No work experience added yet</p>
                         </div>
+                    </div>
+                    <div class="enhance-section">
+                        <button type="button" class="btn btn-enhance" onclick="enhanceAllExperience()" id="enhanceExpBtn">
+                            ✨ AI Enhance All Experience
+                        </button>
                     </div>
                 </div>
 
@@ -688,9 +697,6 @@
                     <div class="section-controls">
                         <h3 class="section-title">Education</h3>
                         <button type="button" class="btn btn-add" onclick="addEducation()">Add Education</button>
-                        <button type="button" class="btn btn-enhance" onclick="enhanceSection('education')" id="enhanceEduBtn">
-                            Enhance
-                        </button>
                     </div>
                     <div id="educationContainer">
                         <div class="empty-state">
@@ -698,19 +704,26 @@
                             <p>No education added yet</p>
                         </div>
                     </div>
+                    <div class="enhance-section">
+                        <button type="button" class="btn btn-enhance" onclick="enhanceSection('education')" id="enhanceEduBtn">
+                            ✨ AI Enhance Education
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Skills -->
                 <div class="section-card">
                     <div class="section-controls">
                         <h3 class="section-title">Skills</h3>
-                        <button type="button" class="btn btn-enhance" onclick="enhanceSection('skills')" id="enhanceSkillsBtn">
-                            Enhance Skills
-                        </button>
                     </div>
                     <div class="form-group">
                         <label for="skills">Skills (comma-separated)</label>
                         <textarea id="skills" placeholder="JavaScript, React, Node.js, Python, SQL, Git..."></textarea>
+                    </div>
+                    <div class="enhance-section">
+                        <button type="button" class="btn btn-enhance" onclick="enhanceSection('skills')" id="enhanceSkillsBtn">
+                            ✨ AI Enhance Skills
+                        </button>
                     </div>
                 </div>
 
@@ -718,13 +731,15 @@
                 <div class="section-card">
                     <div class="section-controls">
                         <h3 class="section-title">Projects</h3>
-                        <button type="button" class="btn btn-enhance" onclick="enhanceSection('projects')" id="enhanceProjectsBtn">
-                            Enhance Projects
-                        </button>
                     </div>
                     <div class="form-group">
                         <label for="projects">Projects</label>
                         <textarea id="projects" placeholder="Project 1: Description of your key project...&#10;Project 2: Another important project..."></textarea>
+                    </div>
+                    <div class="enhance-section">
+                        <button type="button" class="btn btn-enhance" onclick="enhanceSection('projects')" id="enhanceProjectsBtn">
+                            ✨ AI Enhance Projects
+                        </button>
                     </div>
                 </div>
 
@@ -734,6 +749,12 @@
                     <button type="button" class="btn btn-secondary" onclick="saveData()">Save Progress</button>
                     <button type="button" class="btn btn-secondary" onclick="loadData()">Load Saved</button>
                     <button type="button" class="btn btn-secondary" onclick="clearAll()">Clear All</button>
+                </div>
+                
+                <!-- Multi-step Resume Option -->
+                <div style="margin-top: 2rem; text-align: center; padding: 1.5rem; background: rgba(255,255,255,0.1); border-radius: 16px; border: 1px solid rgba(255,255,255,0.2);">
+                    <h3 style="color: #4a5568; margin-bottom: 1rem; font-size: 1.1rem;">Prefer a guided step-by-step approach?</h3>
+                    <a href="/start" style="display:inline-block;background:#fff;color:#4a5568;border:2px solid #e2e8f0;padding:.75rem 1.5rem;border-radius:12px;text-decoration:none;font-weight:600;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(0,0,0,0.1);">Start Multi-step Resume</a>
                 </div>
             </div>
 
@@ -1050,11 +1071,23 @@
 
             educationItems.forEach((edu, index) => {
                 if (eduElements[index]) {
-                    const detailsField = eduElements[index].querySelector('.edu-details');
-                    if (detailsField) {
-                        const parts = edu.split('. ');
-                        if (parts.length > 1) {
-                            detailsField.value = parts.slice(1).join('. ');
+                    const degreeEl = eduElements[index].querySelector('.edu-degree');
+                    const fieldEl = eduElements[index].querySelector('.edu-field');
+                    const institutionEl = eduElements[index].querySelector('.edu-institution');
+                    const detailsEl = eduElements[index].querySelector('.edu-details');
+
+                    // Pattern: "Degree in Field from Institution. Details"
+                    const match = edu.match(/^\s*(.*?)\s+in\s+(.*?)\s+from\s+(.*?)\.?\s*(.*)$/i);
+                    if (match) {
+                        const [, degreeVal, fieldVal, institutionVal, detailsVal] = match;
+                        if (degreeEl) degreeEl.value = degreeVal.trim();
+                        if (fieldEl) fieldEl.value = fieldVal.trim();
+                        if (institutionEl) institutionEl.value = institutionVal.trim();
+                        if (detailsEl) detailsEl.value = detailsVal.trim();
+                    } else {
+                        // Fallback: if we cannot parse, append to details only
+                        if (detailsEl) {
+                            detailsEl.value = edu.trim();
                         }
                     }
                 }
@@ -1076,9 +1109,6 @@
                 <div class="item-header">
                     <h4 class="item-title">Experience ${experienceCounter}</h4>
                     <div style="display: flex; gap: 0.5rem;">
-                        <button type="button" class="btn btn-enhance" onclick="enhanceSingleExperience(this)" title="Enhance this experience">
-                            Enhance
-                        </button>
                         <button type="button" class="btn btn-remove" onclick="removeExperience(this)">Remove</button>
                     </div>
                 </div>

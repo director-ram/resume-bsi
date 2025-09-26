@@ -1,0 +1,142 @@
+import type { ResumeData } from "@/pages/Index";
+
+interface ModernTemplateProps {
+  resumeData: ResumeData;
+}
+
+export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
+  const { personalInfo, experience, education, skills, projects } = resumeData;
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  };
+
+  const skillsArray = skills.split(',').map(skill => skill.trim()).filter(Boolean);
+
+  return (
+    <div className="resume-template modern" id="resume-preview">
+      {/* Header with gradient background */}
+      <div className="bg-gradient-primary text-white p-8 text-center -m-8 mb-8 rounded-t-xl">
+        <h1 className="text-4xl font-bold mb-2">
+          {personalInfo.fullName || 'Your Name'}
+        </h1>
+        <div className="text-lg opacity-90 space-y-1">
+          {personalInfo.email && <div>{personalInfo.email}</div>}
+          <div className="flex justify-center items-center gap-4 flex-wrap">
+            {personalInfo.phone && <span>{personalInfo.phone}</span>}
+            {personalInfo.location && <span>{personalInfo.location}</span>}
+            {personalInfo.linkedin && <span>{personalInfo.linkedin}</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Professional Summary */}
+      {personalInfo.summary && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary">
+            Professional Summary
+          </h2>
+          <p className="text-muted-foreground leading-relaxed">
+            {personalInfo.summary}
+          </p>
+        </div>
+      )}
+
+      {/* Work Experience */}
+      {experience.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary">
+            Work Experience
+          </h2>
+          <div className="space-y-6">
+            {experience.map((exp) => (
+              <div key={exp.id} className="pb-4 border-b border-border/50 last:border-b-0">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground">{exp.title}</h3>
+                    <p className="text-primary font-semibold">{exp.company}</p>
+                  </div>
+                  <div className="text-muted-foreground text-sm font-medium text-right">
+                    {formatDate(exp.startDate)} - {exp.isCurrentJob ? 'Present' : formatDate(exp.endDate)}
+                  </div>
+                </div>
+                {exp.description && (
+                  <div className="text-muted-foreground leading-relaxed whitespace-pre-line mt-2">
+                    {exp.description}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Education */}
+      {education.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary">
+            Education
+          </h2>
+          <div className="space-y-4">
+            {education.map((edu) => (
+              <div key={edu.id} className="pb-3 border-b border-border/30 last:border-b-0">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground">{edu.degree}</h3>
+                    <p className="text-primary font-semibold">{edu.school}</p>
+                    {edu.gpa && <p className="text-sm text-muted-foreground">GPA: {edu.gpa}</p>}
+                  </div>
+                  <div className="text-muted-foreground text-sm font-medium">
+                    {formatDate(edu.graduationDate)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Skills */}
+      {skills.trim() && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary">
+            Skills
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {skillsArray.map((skill, index) => (
+              <span 
+                key={index} 
+                className="bg-gradient-primary text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm"
+              >
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Projects */}
+      {projects.trim() && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary">
+            Projects
+          </h2>
+          <div className="text-muted-foreground leading-relaxed whitespace-pre-line">
+            {projects}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!personalInfo.fullName && experience.length === 0 && education.length === 0 && !skills.trim() && !projects.trim() && (
+        <div className="text-center py-16 text-muted-foreground">
+          <div className="text-6xl mb-4">📝</div>
+          <h3 className="text-xl font-semibold mb-2">Start Building Your Resume</h3>
+          <p>Fill out the form on the left to see your resume come to life!</p>
+        </div>
+      )}
+    </div>
+  );
+};
