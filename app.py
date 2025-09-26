@@ -474,12 +474,26 @@ def serve_built_assets_root(path):
         return send_from_directory(assets_dir, path)
     return ("", 404)
 
-# Serve favicon from dist if present
+# Serve favicons from dist if present
 @app.route('/favicon.ico')
-def serve_favicon():
-    fav_path = os.path.join(FRONTEND_DIST, 'favicon.ico')
-    if os.path.exists(fav_path):
+def serve_favicon_ico():
+    fav = os.path.join(FRONTEND_DIST, 'favicon.ico')
+    if os.path.exists(fav):
         return send_from_directory(FRONTEND_DIST, 'favicon.ico')
+    return ("", 404)
+
+@app.route('/favicon.jpg')
+def serve_favicon_jpg():
+    fav = os.path.join(FRONTEND_DIST, 'favicon.jpg')
+    if os.path.exists(fav):
+        return send_from_directory(FRONTEND_DIST, 'favicon.jpg')
+    return ("", 404)
+
+@app.route('/favicon.png')
+def serve_favicon_png():
+    fav = os.path.join(FRONTEND_DIST, 'favicon.png')
+    if os.path.exists(fav):
+        return send_from_directory(FRONTEND_DIST, 'favicon.png')
     return ("", 404)
 
 # -------------------------------
