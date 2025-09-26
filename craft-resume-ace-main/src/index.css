@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Professional Resume Builder Design System */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 213 26% 28%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 213 26% 28%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 213 26% 28%;
+
+    /* Primary - Beautiful purple gradient theme */
+    --primary: 237 49% 67%;
+    --primary-foreground: 0 0% 100%;
+    --primary-variant: 259 31% 59%;
+
+    /* Secondary - Soft grays */
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 213 26% 28%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 213 26% 28%;
+
+    /* Success - Professional green */
+    --success: 158 64% 52%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 158 74% 67%;
+
+    /* Warning - Amber tones */
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 45 93% 58%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 237 49% 67%;
+
+    --radius: 0.5rem;
+
+    /* Glass morphism and effects */
+    --glass-bg: 0 0% 100% / 0.95;
+    --glass-border: 0 0% 100% / 0.3;
+    --backdrop-blur: blur(20px);
+    
+    /* Custom gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-variant)));
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(var(--success-light)));
+    --gradient-warning: linear-gradient(135deg, hsl(var(--warning)), hsl(var(--warning-light)));
+    --gradient-background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-variant)) 50%, hsl(var(--primary)) 100%);
+    
+    /* Shadows */
+    --shadow-glass: 0 20px 40px hsl(0 0% 0% / 0.1);
+    --shadow-card: 0 8px 25px hsl(0 0% 0% / 0.08);
+    --shadow-button: 0 4px 15px hsl(var(--primary) / 0.4);
+    --shadow-button-hover: 0 8px 25px hsl(var(--primary) / 0.6);
+    --shadow-success: 0 4px 15px hsl(var(--success) / 0.4);
+    --shadow-success-hover: 0 8px 25px hsl(var(--success) / 0.6);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .dark {
+    --background: 222 84% 5%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 84% 5%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 84% 5%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --success: 158 64% 52%;
+    --success-foreground: 0 0% 100%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 213 27% 84%;
+
+    --glass-bg: 222 84% 5% / 0.95;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

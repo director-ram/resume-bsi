@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, send_file, jsonify, redirect, url_for, session, send_from_directory
 import re
 import subprocess
 from docx import Document
@@ -126,6 +126,8 @@ def enhance_section(section_name, user_input):
             ["ollama", "run", OLLAMA_MODEL, combined_prompt],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=True,
             timeout=90
         )
@@ -217,21 +219,8 @@ def save_resume_docx(enhanced_resume, filename="Enhanced_Resume.docx"):
 # -------------------------------
 @app.route("/", methods=["GET", "POST"])
 def index():
-    enhanced_resume = {}
-    download_file = None
-
-    if request.method == "POST":
-        for section in resume_prompts.keys():
-            user_input = request.form.get(section, "")
-            if user_input.strip():
-                enhanced_text = enhance_section(section, user_input)
-                if enhanced_text:
-                    enhanced_resume[section] = enhanced_text
-
-        if enhanced_resume:
-            download_file = save_resume_docx(enhanced_resume)
-
-    return render_template("index.html", enhanced_resume=enhanced_resume, download_file=download_file)
+    # Redirect root to React app
+    return redirect(url_for('serve_app_index'))
 
 @app.route("/enhance", methods=["POST"])
 def enhance_ajax():
@@ -257,6 +246,73 @@ def download():
     if os.path.exists(filename):
         return send_file(filename, as_attachment=True)
     return "File not found.", 404
+
+@app.route("/api/generate", methods=["POST"])
+def api_generate_docx():
+    """Generate a DOCX from provided resume data; optionally enhance first.
+
+    Expected JSON body:
+    {
+      "personalInfo": { "summary": "..." },
+      "experience": [ { "title": "...", "company": "...", "description": "..." } ],
+      "education": [ { "degree": "...", "school": "..." } ],
+      "skills": "...",
+      "projects": "...",
+      "enhance": true
+    }
+    """
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        enhance_flag = bool(data.get("enhance", True))
+
+        # Flatten arrays into text blocks similar to legacy template behavior
+        def join_experience(items):
+            lines = []
+            for it in items or []:
+                title = it.get("title", "").strip()
+                company = it.get("company", "").strip()
+                desc = it.get("description", "").strip()
+                header = f"{title} at {company}".strip()
+                lines.append(f"{header}: {desc}" if header else desc)
+            return "\n\n".join([l for l in lines if l])
+
+        def join_education(items):
+            lines = []
+            for it in items or []:
+                degree = it.get("degree", "").strip()
+                school = it.get("school", "").strip()
+                grad = it.get("graduationDate", "").strip()
+                gpa = it.get("gpa", "").strip()
+                parts = [p for p in [f"{degree} from {school}", f"Graduated: {grad}" if grad else "", f"GPA: {gpa}" if gpa else ""] if p]
+                lines.append(". ".join(parts))
+            return "\n\n".join([l for l in lines if l])
+
+        summary = (data.get("personalInfo", {}) or {}).get("summary", "")
+        experience_text = join_experience(data.get("experience", []))
+        education_text = join_education(data.get("education", []))
+        skills_text = data.get("skills", "")
+        projects_text = data.get("projects", "")
+
+        sections = {
+            "summary": summary,
+            "experience": experience_text,
+            "education": education_text,
+            "skills": skills_text,
+            "projects": projects_text,
+        }
+
+        final_sections = {}
+        for key, value in sections.items():
+            if enhance_flag:
+                final_sections[key] = enhance_section(key, value or "")
+            else:
+                final_sections[key] = value or ""
+
+        filename = save_resume_docx(final_sections)
+        return send_file(filename, as_attachment=True)
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/health")
 def health_check():
@@ -386,8 +442,49 @@ def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
 
 # -------------------------------
+# Frontend (Vite) - Static Serving
+# -------------------------------
+
+# Serve built React app from craft-resume-ace-main/dist if present
+FRONTEND_DIST = os.path.join(os.path.dirname(__file__), 'craft-resume-ace-main', 'dist')
+
+@app.route('/app')
+def serve_app_index():
+    if os.path.exists(os.path.join(FRONTEND_DIST, 'index.html')):
+        return send_from_directory(FRONTEND_DIST, 'index.html')
+    # If not built yet, fall back to legacy page
+    return render_template("index.html")
+
+@app.route('/app/<path:path>')
+def serve_app_assets(path):
+    asset_path = os.path.join(FRONTEND_DIST, path)
+    if os.path.exists(asset_path):
+        return send_from_directory(FRONTEND_DIST, path)
+    # SPA fallback
+    if os.path.exists(os.path.join(FRONTEND_DIST, 'index.html')):
+        return send_from_directory(FRONTEND_DIST, 'index.html')
+    return render_template("index.html")
+
+# Serve built assets when index.html references /assets/* at site root
+@app.route('/assets/<path:path>')
+def serve_built_assets_root(path):
+    assets_dir = os.path.join(FRONTEND_DIST, 'assets')
+    file_path = os.path.join(assets_dir, path)
+    if os.path.exists(file_path):
+        return send_from_directory(assets_dir, path)
+    return ("", 404)
+
+# Serve favicon from dist if present
+@app.route('/favicon.ico')
+def serve_favicon():
+    fav_path = os.path.join(FRONTEND_DIST, 'favicon.ico')
+    if os.path.exists(fav_path):
+        return send_from_directory(FRONTEND_DIST, 'favicon.ico')
+    return ("", 404)
+
+# -------------------------------
 # Main
 # -------------------------------
 if __name__ == "__main__":
-    print("Starting Flask app on http://localhost:5000")
+    print("Backend ee server lo run avuthundi le po http://localhost:5000")
     app.run(debug=True, host='0.0.0.0', port=5000)
