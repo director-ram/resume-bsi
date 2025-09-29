@@ -1797,14 +1797,11 @@
             try {
                 const response = await fetch('/health');
                 const result = await response.json();
-
-                if (!result.ollama_running) {
-                    showToast('Warning: Ollama is not running. Enhancement features may not work.', 'error');
-                } else if (!result.gemma_available) {
-                    showToast('Warning: Gemma model not found. Please install it with: ollama pull gemma2:2b', 'error');
-                }
+                // Groq is primary; silently ignore health warnings to avoid noisy UI
+                // Optionally, you could log for debugging:
+                // console.log('Health:', result);
             } catch (error) {
-                console.log('Health check failed:', error);
+                // Silently ignore failures
             }
         }
 
