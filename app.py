@@ -4,6 +4,12 @@ import subprocess
 from docx import Document
 import os
 import requests
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from io import BytesIO
 
 # --------------------------------
 # Simple .env loader (no dependency)
@@ -599,6 +605,170 @@ def serve_favicon_png():
     if os.path.exists(fav):
         return send_from_directory(FRONTEND_DIST, 'favicon.png')
     return ("", 404)
+
+# -------------------------------
+# PDF Generation Functions
+# -------------------------------
+def generate_pdf(resume_data):
+    """Generate a PDF resume from the provided data."""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
+    
+    # Get styles
+    styles = getSampleStyleSheet()
+    
+    # Detect template style
+    template = (resume_data.get('template') or 'modern').lower()
+
+    # Create styles, theme colors vary by template
+    primary_color = colors.HexColor('#2563eb') if template == 'modern' else colors.HexColor('#0ea5e9')
+    heading_color = colors.HexColor('#1e40af') if template == 'modern' else colors.HexColor('#0369a1')
+
+    # Create custom styles
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        spaceAfter=30,
+        alignment=1,  # Center alignment
+        textColor=primary_color
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=16 if template == 'modern' else 15,
+        spaceAfter=12,
+        spaceBefore=20,
+        textColor=heading_color,
+        underlineWidth=0 if template == 'modern' else 0,
+    )
+    
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontSize=11 if template == 'modern' else 10.5,
+        spaceAfter=6,
+        leading=14
+    )
+    
+    # Build content
+    story = []
+    
+    # Personal Information
+    personal_info = resume_data.get('personalInfo', {})
+    if personal_info.get('fullName'):
+        story.append(Paragraph(personal_info['fullName'], title_style))
+        story.append(Spacer(1, 12))
+    
+    # Contact Information
+    contact_info = []
+    if personal_info.get('email'):
+        contact_info.append(personal_info['email'])
+    if personal_info.get('phone'):
+        contact_info.append(personal_info['phone'])
+    if personal_info.get('location'):
+        contact_info.append(personal_info['location'])
+    if personal_info.get('linkedin'):
+        contact_info.append(personal_info['linkedin'])
+    if personal_info.get('github'):
+        contact_info.append(personal_info['github'])
+    
+    if contact_info:
+        story.append(Paragraph(' | '.join(contact_info), normal_style))
+        story.append(Spacer(1, 20))
+    
+    # Professional Summary
+    if personal_info.get('summary'):
+        story.append(Paragraph('PROFESSIONAL SUMMARY' if template == 'modern' else 'Professional Summary', heading_style))
+        story.append(Paragraph(personal_info['summary'], normal_style))
+        story.append(Spacer(1, 12))
+    
+    # Work Experience
+    experience = resume_data.get('experience', [])
+    if experience:
+        story.append(Paragraph('WORK EXPERIENCE' if template == 'modern' else 'Professional Experience', heading_style))
+        for exp in experience:
+            # Job title and company
+            job_info = f"<b>{exp.get('title', '')}</b>"
+            if exp.get('company'):
+                job_info += f" - {exp.get('company', '')}"
+            story.append(Paragraph(job_info, normal_style))
+            
+            # Dates
+            start_date = exp.get('startDate', '')
+            end_date = exp.get('endDate', '') if not exp.get('isCurrentJob', False) else 'Present'
+            if start_date or end_date:
+                date_str = f"{start_date} - {end_date}" if start_date and end_date else start_date or end_date
+                story.append(Paragraph(f"<i>{date_str}</i>", normal_style))
+            
+            # Description
+            if exp.get('description'):
+                story.append(Paragraph(exp['description'], normal_style))
+            
+            story.append(Spacer(1, 12))
+    
+    # Education
+    education = resume_data.get('education', [])
+    if education:
+        story.append(Paragraph('EDUCATION', heading_style))
+        for edu in education:
+            # Degree and school
+            edu_info = f"<b>{edu.get('degree', '')}</b>"
+            if edu.get('school'):
+                edu_info += f" - {edu.get('school', '')}"
+            story.append(Paragraph(edu_info, normal_style))
+            
+            # Graduation date and GPA
+            grad_date = edu.get('graduationDate', '')
+            gpa = edu.get('gpa', '')
+            if grad_date or gpa:
+                details = []
+                if grad_date:
+                    details.append(grad_date)
+                if gpa:
+                    details.append(f"GPA: {gpa}")
+                story.append(Paragraph(f"<i>{' | '.join(details)}</i>", normal_style))
+            
+            story.append(Spacer(1, 8))
+    
+    # Skills
+    skills = resume_data.get('skills', '')
+    if skills.strip():
+        story.append(Paragraph('SKILLS' if template == 'modern' else 'Core Competencies', heading_style))
+        story.append(Paragraph(skills, normal_style))
+        story.append(Spacer(1, 12))
+    
+    # Projects
+    projects = resume_data.get('projects', '')
+    if projects.strip():
+        story.append(Paragraph('PROJECTS' if template == 'modern' else 'Key Projects', heading_style))
+        story.append(Paragraph(projects, normal_style))
+    
+    # Build PDF
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+
+@app.route("/api/generate-pdf", methods=["POST"])
+def api_generate_pdf():
+    """Generate a PDF from provided resume data."""
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        
+        # Generate PDF
+        pdf_buffer = generate_pdf(data)
+        
+        # Return PDF as response
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=f"{data.get('personalInfo', {}).get('fullName', 'Resume')}.pdf",
+            mimetype='application/pdf'
+        )
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # -------------------------------
 # Main

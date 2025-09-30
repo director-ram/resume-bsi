@@ -1,13 +1,16 @@
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { ResumeHeader } from "@/components/resume/ResumeHeader";
 import { useResume } from "@/context/ResumeContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { ResumePreview } from "@/components/resume/ResumePreview";
 
 const ReviewPage = () => {
   const navigate = useNavigate();
   const { resumeData, progress, setResumeData } = useResume();
+  const [selectedTemplate, setSelectedTemplate] = useState<'modern' | 'professional'>("modern");
 
   const updatePI = (key: keyof typeof resumeData.personalInfo, value: string) => {
     setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, [key]: value } });
@@ -57,11 +60,54 @@ const ReviewPage = () => {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...resumeData, template: selectedTemplate }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Get filename from response headers or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'Resume.pdf';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-background bg-[length:400%_400%] animate-gradient-shift">
       <div className="container mx-auto min-h-screen grid grid-rows-[auto_1fr] max-w-[1600px]">
         <ResumeHeader progress={progress} />
-        <main className="p-6 md:p-8 max-w-4xl mx-auto w-full">
+        <main className="p-6 md:p-8 w-full grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-[1600px]">
+          {/* Left: Editable review form */}
           <div className="bg-glass-bg backdrop-blur-glass rounded-3xl p-6 md:p-8 shadow-glass border border-glass-border">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">Review & Generate</h2>
@@ -176,9 +222,24 @@ const ReviewPage = () => {
                   onChange={(e) => setResumeData({ ...resumeData, projects: e.target.value })} />
               </div>
             </div>
-            <div className="flex justify-end mt-6">
+            <div className="flex justify-end gap-4 mt-6">
+              <Button 
+                variant="outline" 
+                className="bg-gradient-primary text-white border-0" 
+                onClick={handleDownloadPDF}
+              >
+                Download PDF
+              </Button>
               <Button className="bg-gradient-success text-white border-0" onClick={handleGenerate}>Generate Resume</Button>
             </div>
+          </div>
+          {/* Right: Live preview with template selector */}
+          <div className="h-full lg:sticky lg:top-8">
+            <ResumePreview 
+              resumeData={resumeData}
+              selectedTemplate={selectedTemplate}
+              onTemplateChange={setSelectedTemplate}
+            />
           </div>
         </main>
       </div>
