@@ -95,17 +95,32 @@ export const PersonalInfoForm = ({ data, onChange }: PersonalInfoFormProps) => {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="linkedin" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-          LinkedIn Profile
-        </Label>
-        <Input
-          id="linkedin"
-          placeholder="linkedin.com/in/johndoe"
-          value={data.linkedin}
-          onChange={(e) => updateField('linkedin', e.target.value)}
-          className="border-2 focus:border-primary transition-colors bg-muted/50"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="space-y-2">
+          <Label htmlFor="linkedin" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            LinkedIn Profile
+          </Label>
+          <Input
+            id="linkedin"
+            placeholder="linkedin.com/in/johndoe"
+            value={data.linkedin}
+            onChange={(e) => updateField('linkedin', e.target.value)}
+            className="border-2 focus:border-primary transition-colors bg-muted/50"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="github" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            GitHub Profile
+          </Label>
+          <Input
+            id="github"
+            placeholder="github.com/johndoe"
+            value={data.github}
+            onChange={(e) => updateField('github', e.target.value)}
+            className="border-2 focus:border-primary transition-colors bg-muted/50"
+          />
+        </div>
       </div>
 
       <div className="space-y-2 mt-4">
