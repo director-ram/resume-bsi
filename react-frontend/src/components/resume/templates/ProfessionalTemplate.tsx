@@ -22,7 +22,7 @@ export const ProfessionalTemplate = ({ resumeData }: ProfessionalTemplateProps) 
         <h1 className="text-4xl font-bold text-foreground mb-2">
           {personalInfo.fullName || 'Your Name'}
         </h1>
-        <div className="text-muted-foreground space-y-1">
+        <div className="text-gray-600 space-y-1">
           {personalInfo.email && (
             <div className="flex items-center gap-2">
               <span className="font-medium">Email:</span> {personalInfo.email}
@@ -44,6 +44,11 @@ export const ProfessionalTemplate = ({ resumeData }: ProfessionalTemplateProps) 
                 <span className="font-medium">LinkedIn:</span> {personalInfo.linkedin}
               </div>
             )}
+            {personalInfo.github && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium">GitHub:</span> {personalInfo.github}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -54,7 +59,7 @@ export const ProfessionalTemplate = ({ resumeData }: ProfessionalTemplateProps) 
           <h2 className="text-2xl font-bold text-foreground mb-4 uppercase tracking-wide">
             Professional Summary
           </h2>
-          <p className="text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-lg border-l-4 border-primary">
+          <p className="text-gray-700 leading-relaxed bg-muted/30 p-4 rounded-lg border-l-4 border-primary text-base font-medium">
             {personalInfo.summary}
           </p>
         </div>
@@ -74,12 +79,12 @@ export const ProfessionalTemplate = ({ resumeData }: ProfessionalTemplateProps) 
                     <h3 className="text-xl font-bold text-foreground">{exp.title}</h3>
                     <p className="text-lg text-primary font-semibold">{exp.company}</p>
                   </div>
-                  <div className="text-muted-foreground font-medium bg-background px-3 py-1 rounded-md border">
+                  <div className="text-gray-600 font-semibold bg-background px-3 py-1 rounded-md border">
                     {formatDate(exp.startDate)} - {exp.isCurrentJob ? 'Present' : formatDate(exp.endDate)}
                   </div>
                 </div>
                 {exp.description && (
-                  <div className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                  <div className="text-gray-700 leading-relaxed whitespace-pre-line text-base">
                     {exp.description}
                   </div>
                 )}
@@ -103,12 +108,12 @@ export const ProfessionalTemplate = ({ resumeData }: ProfessionalTemplateProps) 
                     <h3 className="text-lg font-bold text-foreground">{edu.degree}</h3>
                     <p className="text-primary font-semibold">{edu.school}</p>
                     {edu.gpa && (
-                      <p className="text-sm text-muted-foreground font-medium">
-                        GPA: <span className="text-foreground">{edu.gpa}</span>
+                      <p className="text-sm text-gray-600 font-medium">
+                        GPA: <span className="text-gray-800 font-semibold">{edu.gpa}</span>
                       </p>
                     )}
                   </div>
-                  <div className="text-muted-foreground font-medium bg-background px-3 py-1 rounded-md border text-sm">
+                  <div className="text-gray-600 font-semibold bg-background px-3 py-1 rounded-md border text-sm">
                     {formatDate(edu.graduationDate)}
                   </div>
                 </div>
@@ -144,7 +149,7 @@ export const ProfessionalTemplate = ({ resumeData }: ProfessionalTemplateProps) 
             Key Projects
           </h2>
           <div className="bg-muted/30 p-6 rounded-lg border-l-4 border-warning">
-            <div className="text-muted-foreground leading-relaxed whitespace-pre-line">
+            <div className="text-gray-700 leading-relaxed whitespace-pre-line text-base">
               {projects}
             </div>
           </div>
@@ -153,10 +158,10 @@ export const ProfessionalTemplate = ({ resumeData }: ProfessionalTemplateProps) 
 
       {/* Empty state */}
       {!personalInfo.fullName && experience.length === 0 && education.length === 0 && !skills.trim() && !projects.trim() && (
-        <div className="text-center py-16 text-muted-foreground">
+        <div className="text-center py-16 text-gray-500">
           <div className="text-6xl mb-4">💼</div>
-          <h3 className="text-xl font-semibold mb-2">Professional Resume Template</h3>
-          <p>Complete the form sections to build your professional resume</p>
+          <h3 className="text-xl font-semibold mb-2 text-gray-700">Professional Resume Template</h3>
+          <p className="text-gray-600">Complete the form sections to build your professional resume</p>
         </div>
       )}
     </div>
