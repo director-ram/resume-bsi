@@ -1,23 +1,68 @@
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Download, CheckCircle, Save, Upload, Trash2, ArrowRight } from "lucide-react";
+import { Download, CheckCircle, Save, Upload, Trash2 } from "lucide-react";
 import type { ResumeData } from "@/pages/Index";
 
 interface FormControlsProps {
   resumeData: ResumeData;
   onCompleteResume: () => void;
   onStartMultiStep?: () => void;
+  selectedTemplate?: 'modern' | 'professional';
 }
 
-export const FormControls = ({ resumeData, onCompleteResume, onStartMultiStep }: FormControlsProps) => {
+export const FormControls = ({ resumeData, onCompleteResume, onStartMultiStep, selectedTemplate }: FormControlsProps) => {
   const { toast } = useToast();
 
-  const downloadPDF = () => {
-    // PDF download functionality placeholder
-    toast({
-      title: "PDF Download",
-      description: "PDF download functionality coming soon!",
-    });
+  const downloadPDF = async () => {
+    try {
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...resumeData, template: selectedTemplate || 'modern' }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Get filename from response headers or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'Resume.pdf';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "PDF Downloaded!",
+        description: "Your resume has been downloaded as a PDF.",
+      });
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const saveProgress = () => {
@@ -58,22 +103,6 @@ export const FormControls = ({ resumeData, onCompleteResume, onStartMultiStep }:
 
   return (
     <div className="space-y-4">
-      {/* Multi-step button at the top */}
-      {onStartMultiStep && (
-        <div className="text-center">
-          <Button 
-            onClick={onStartMultiStep}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 px-8 py-3 text-lg font-semibold"
-          >
-            <ArrowRight className="w-5 h-5 mr-2" />
-            Start Multi-Step Resume
-          </Button>
-          <p className="text-sm text-muted-foreground mt-2">
-            Build your resume step by step with guided assistance
-          </p>
-        </div>
-      )}
-      
       <div className="flex flex-wrap gap-4 pt-6 border-t border-border">
         <Button 
           onClick={downloadPDF}

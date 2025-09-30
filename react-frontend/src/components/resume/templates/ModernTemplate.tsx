@@ -28,6 +28,7 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
             {personalInfo.phone && <span>{personalInfo.phone}</span>}
             {personalInfo.location && <span>{personalInfo.location}</span>}
             {personalInfo.linkedin && <span>{personalInfo.linkedin}</span>}
+            {personalInfo.github && <span>{personalInfo.github}</span>}
           </div>
         </div>
       </div>
@@ -38,7 +39,7 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
           <h2 className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary">
             Professional Summary
           </h2>
-          <p className="text-muted-foreground leading-relaxed">
+          <p className="text-gray-700 leading-relaxed text-base font-medium">
             {personalInfo.summary}
           </p>
         </div>
@@ -58,12 +59,12 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
                     <h3 className="text-xl font-bold text-foreground">{exp.title}</h3>
                     <p className="text-primary font-semibold">{exp.company}</p>
                   </div>
-                  <div className="text-muted-foreground text-sm font-medium text-right">
+                  <div className="text-gray-600 text-sm font-semibold text-right">
                     {formatDate(exp.startDate)} - {exp.isCurrentJob ? 'Present' : formatDate(exp.endDate)}
                   </div>
                 </div>
                 {exp.description && (
-                  <div className="text-muted-foreground leading-relaxed whitespace-pre-line mt-2">
+                  <div className="text-gray-700 leading-relaxed whitespace-pre-line mt-2 text-base">
                     {exp.description}
                   </div>
                 )}
@@ -86,9 +87,9 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
                   <div>
                     <h3 className="text-lg font-bold text-foreground">{edu.degree}</h3>
                     <p className="text-primary font-semibold">{edu.school}</p>
-                    {edu.gpa && <p className="text-sm text-muted-foreground">GPA: {edu.gpa}</p>}
+                    {edu.gpa && <p className="text-sm text-gray-600 font-medium">GPA: {edu.gpa}</p>}
                   </div>
-                  <div className="text-muted-foreground text-sm font-medium">
+                  <div className="text-gray-600 text-sm font-semibold">
                     {formatDate(edu.graduationDate)}
                   </div>
                 </div>
@@ -123,7 +124,7 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
           <h2 className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary">
             Projects
           </h2>
-          <div className="text-muted-foreground leading-relaxed whitespace-pre-line">
+          <div className="text-gray-700 leading-relaxed whitespace-pre-line text-base">
             {projects}
           </div>
         </div>
@@ -131,10 +132,10 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
 
       {/* Empty state */}
       {!personalInfo.fullName && experience.length === 0 && education.length === 0 && !skills.trim() && !projects.trim() && (
-        <div className="text-center py-16 text-muted-foreground">
+        <div className="text-center py-16 text-gray-500">
           <div className="text-6xl mb-4">📝</div>
-          <h3 className="text-xl font-semibold mb-2">Start Building Your Resume</h3>
-          <p>Fill out the form on the left to see your resume come to life!</p>
+          <h3 className="text-xl font-semibold mb-2 text-gray-700">Start Building Your Resume</h3>
+          <p className="text-gray-600">Fill out the form on the left to see your resume come to life!</p>
         </div>
       )}
     </div>
