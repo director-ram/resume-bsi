@@ -14,6 +14,7 @@ export interface ResumeData {
     phone: string;
     location: string;
     linkedin: string;
+    github: string;
     summary: string;
   };
   experience: Array<{
@@ -47,6 +48,7 @@ const Index = () => {
       phone: '',
       location: '',
       linkedin: '',
+      github: '',
       summary: '',
     },
     experience: [],
@@ -134,19 +136,26 @@ const Index = () => {
       <div className="container mx-auto min-h-screen grid grid-rows-[auto_1fr] max-w-[1800px]">
         <ResumeHeader progress={calculateProgress()} />
         
-        <main className="grid grid-cols-1 xl:grid-cols-[550px_1fr] gap-8 p-8 min-h-[calc(100vh-200px)]">
-          <ResumeForm 
-            resumeData={resumeData}
-            onResumeDataChange={setResumeData}
-            onCompleteResume={handleCompleteResume}
-            onStartMultiStep={handleStartMultiStep}
-          />
+        <main className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8 h-[calc(100vh-200px)]">
+          {/* Left side - Form sections */}
+          <div className="space-y-6 overflow-y-auto">
+            <ResumeForm 
+              resumeData={resumeData}
+              onResumeDataChange={setResumeData}
+              onCompleteResume={handleCompleteResume}
+              onStartMultiStep={handleStartMultiStep}
+              selectedTemplate={selectedTemplate}
+            />
+          </div>
           
-          <ResumePreview 
-            resumeData={resumeData}
-            selectedTemplate={selectedTemplate}
-            onTemplateChange={setSelectedTemplate}
-          />
+          {/* Right side - Live resume preview */}
+          <div className="h-full">
+            <ResumePreview 
+              resumeData={resumeData}
+              selectedTemplate={selectedTemplate}
+              onTemplateChange={setSelectedTemplate}
+            />
+          </div>
         </main>
       </div>
     </div>
