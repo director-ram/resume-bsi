@@ -22,7 +22,7 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
       try { return JSON.parse(saved) as ResumeData; } catch {}
     }
     return {
-      personalInfo: { fullName: "", email: "", phone: "", location: "", linkedin: "", summary: "" },
+      personalInfo: { fullName: "", email: "", phone: "", location: "", linkedin: "", github: "", summary: "" },
       experience: [],
       education: [],
       skills: "",

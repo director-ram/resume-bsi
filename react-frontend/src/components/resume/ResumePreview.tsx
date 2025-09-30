@@ -16,8 +16,8 @@ export const ResumePreview = ({
   onTemplateChange 
 }: ResumePreviewProps) => {
   return (
-    <div className="bg-glass-bg backdrop-blur-glass rounded-3xl shadow-glass border border-glass-border overflow-hidden">
-      <div className="bg-gradient-primary p-6 text-white flex justify-between items-center">
+    <div className="bg-glass-bg backdrop-blur-glass rounded-3xl shadow-glass border border-glass-border h-full flex flex-col">
+      <div className="bg-gradient-primary p-6 text-white flex justify-between items-center flex-shrink-0">
         <h2 className="text-2xl font-bold">Resume Preview</h2>
         <Select value={selectedTemplate} onValueChange={onTemplateChange}>
           <SelectTrigger className="w-48 bg-white/90 text-foreground border-0 shadow-button">
@@ -32,7 +32,7 @@ export const ResumePreview = ({
 
       <div 
         id="resume-content" 
-        className="p-8 min-h-[600px] bg-white max-h-[calc(100vh-300px)] overflow-y-auto"
+        className="p-8 bg-white flex-1 overflow-y-auto"
       >
         {selectedTemplate === 'modern' ? (
           <ModernTemplate resumeData={resumeData} />
