@@ -10,6 +10,14 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from io import BytesIO
+import json
+import asyncio
+
+try:
+    from playwright.async_api import async_playwright
+    PLAYWRIGHT_AVAILABLE = True
+except Exception:
+    PLAYWRIGHT_AVAILABLE = False
 
 # --------------------------------
 # Simple .env loader (no dependency)
@@ -90,13 +98,15 @@ resume_prompts = {
     ),
     "skills": (
         "Role: Expert Resume Consultant\n"
-        "Objective: Refine the Skills section.\n"
-        "Context: The user needs a clear, impressive skills list.\n"
-        "Instruction 1: Rewrite strictly as a concise, comma-separated list.\n"
-        "Instruction 2: Group skills logically and include both technical and soft skills.\n"
-        "Instruction 3: Remove redundancy. Do NOT add skills not already present.\n"
-        "Instruction 4: Return only the single best version for the resume.\n"
-        "Notes: Follow all Global Resume Rules."
+        "Objective: Fix spelling and capitalization in the Skills section.\n"
+        "Context: The user wants their existing skills list cleaned up.\n"
+        "Instruction 1: Keep ALL skills exactly as provided by the user.\n"
+        "Instruction 2: ONLY fix spelling mistakes and standardize capitalization.\n"
+        "Instruction 3: Do NOT add, remove, or reorder any skills.\n"
+        "Instruction 4: Do NOT group, categorize, or reorganize skills.\n"
+        "Instruction 5: Return as a simple comma-separated list.\n"
+        "Instruction 6: Preserve the exact order and content of user's skills.\n"
+        "Notes: Follow all Global Resume Rules. Only correct spelling and capitalization."
     ),
     "education": (
         "Role: Expert Resume Consultant\n"
@@ -110,13 +120,18 @@ resume_prompts = {
     ),
     "projects": (
         "Role: Expert Resume Consultant\n"
-        "Objective: Enhance the Projects section.\n"
-        "Context: The user wants to showcase project work.\n"
-        "Instruction 1: Rewrite in 50–100 words. Single block; no headings.\n"
-        "Instruction 2: Highlight scope, technologies, contributions, and results.\n"
-        "Instruction 3: Do NOT add new projects, tools, or metrics beyond user input.\n"
-        "Instruction 4: Return only the single best version for the resume.\n"
-        "Notes: Follow all Global Resume Rules."
+        "Objective: Enhance the Projects section with proper formatting and corrections.\n"
+        "Context: The user wants to showcase project work professionally.\n"
+        "Instruction 1: Rewrite each project in 30–60 words. Preserve multiple projects if present.\n"
+        "Instruction 2: Fix ALL spelling mistakes and grammar errors.\n"
+        "Instruction 3: Capitalize the first letter of each sentence and proper nouns.\n"
+        "Instruction 4: Use proper punctuation and sentence structure.\n"
+        "Instruction 5: Highlight scope, technologies, contributions, and results for each project.\n"
+        "Instruction 6: Do NOT add new projects, tools, or metrics beyond user input.\n"
+        "Instruction 7: Separate multiple projects with blank lines. Keep each project distinct.\n"
+        "Instruction 8: Do NOT combine multiple projects into one.\n"
+        "Instruction 9: Ensure each project description starts with a capital letter.\n"
+        "Notes: Follow all Global Resume Rules. Focus on spelling, grammar, and proper capitalization."
     ),
     "certifications": (
         "Role: Expert Resume Consultant\n"
@@ -269,7 +284,7 @@ def enhance_section(section_name, user_input):
             "summary": 100,
             "experience": 140,
             "education": 120,
-            "projects": 120,
+            "projects": 200,  # increased for multiple projects
             "skills": 200,  # skills are comma-separated
         }
         cap = word_caps.get(section_key, 150)
@@ -277,22 +292,66 @@ def enhance_section(section_name, user_input):
         if len(words) > cap:
             enhanced_text = " ".join(words[:cap])
 
+        # Post-process projects to ensure proper capitalization
+        if section_key == "projects":
+            # Split into individual projects
+            project_parts = enhanced_text.split('\n\n')
+            capitalized_parts = []
+            
+            for part in project_parts:
+                part = part.strip()
+                if part:
+                    # Capitalize first letter of the project description
+                    if part and not part[0].isupper():
+                        part = part[0].upper() + part[1:]
+                    
+                    # Ensure proper sentence structure
+                    sentences = re.split(r'(?<=[.!?])\s+', part)
+                    capitalized_sentences = []
+                    
+                    for sentence in sentences:
+                        sentence = sentence.strip()
+                        if sentence:
+                            # Capitalize first letter of each sentence
+                            if sentence and not sentence[0].isupper():
+                                sentence = sentence[0].upper() + sentence[1:]
+                            capitalized_sentences.append(sentence)
+                    
+                    part = '. '.join(capitalized_sentences)
+                    # Remove double periods
+                    part = re.sub(r'\.\.+', '.', part)
+                    capitalized_parts.append(part)
+            
+            enhanced_text = '\n\n'.join(capitalized_parts)
+
         # Normalize skills output to comma-separated list without labels
         if section_key == "skills":
+            # Extract all skills from user input (case-insensitive for matching)
+            original_skills = [s.strip() for s in re.split(r",|\n|;", user_input) if s.strip()]
+            original_skills_lower = [s.lower() for s in original_skills]
+            
+            # Extract skills from enhanced output
             lines = [ln.strip().lstrip("-•*") for ln in enhanced_text.splitlines() if ln.strip()]
-            # Only keep tokens that already existed in the user's input to prevent hallucinated skills
-            original_tokens = set([t.strip().lower() for t in re.split(r",|\n|;", user_input) if t.strip()])
-            filtered = []
+            enhanced_skills = []
             for ln in lines:
                 parts = [p.strip() for p in re.split(r",|;", ln) if p.strip()]
                 for p in parts:
-                    if not p.lower().startswith(("explanation", "note", "reason", "changes")):
-                        if not original_tokens or p.lower() in original_tokens:
-                            filtered.append(p)
-            text = ", ".join(filtered)
-            if text.lower().startswith("skills:"):
-                text = text[7:].strip()
-            enhanced_text = text
+                    if not p.lower().startswith(("explanation", "note", "reason", "changes", "skills")):
+                        enhanced_skills.append(p)
+            
+            # Only keep skills that match the original (case-insensitive) and preserve original order
+            filtered = []
+            for orig_skill in original_skills:
+                # Find the enhanced version of this skill (case-insensitive match)
+                for enhanced_skill in enhanced_skills:
+                    if orig_skill.lower() == enhanced_skill.lower():
+                        filtered.append(enhanced_skill)  # Use the enhanced version (fixed spelling/caps)
+                        break
+                else:
+                    # If no enhanced version found, keep original
+                    filtered.append(orig_skill)
+            
+            enhanced_text = ", ".join(filtered)
 
         return enhanced_text if enhanced_text else user_input
 
@@ -750,23 +809,47 @@ def generate_pdf(resume_data):
     buffer.seek(0)
     return buffer
 
+async def _render_pdf_via_playwright(base_url: str, resume_data: dict, template_key: str) -> bytes:
+    async with async_playwright() as p:
+        browser = await p.chromium.launch()
+        context = await browser.new_context()
+        page = await context.new_page()
+        # Seed localStorage for the React app (safe injection with structured arg)
+        await page.add_init_script(
+            script="(data) => { try { localStorage.setItem('resumeData', JSON.stringify(data)); } catch (e) {} }",
+            arg=resume_data,
+        )
+        url = f"{base_url.rstrip('/')}/app/print?template={template_key}"
+        await page.goto(url, wait_until='networkidle')
+        try:
+            await page.wait_for_function("window.__previewReady === true", timeout=10000)
+        except Exception:
+            pass
+        pdf = await page.pdf(format='A4', print_background=True, margin={ 'top': '12mm', 'bottom': '12mm', 'left': '12mm', 'right': '12mm' })
+        await context.close()
+        await browser.close()
+        return pdf
+
 @app.route("/api/generate-pdf", methods=["POST"])
 def api_generate_pdf():
     """Generate a PDF from provided resume data."""
     try:
         data = request.get_json(force=True, silent=True) or {}
-        
-        # Generate PDF
+
+        # Try headless browser (pixel-perfect) first
+        if PLAYWRIGHT_AVAILABLE:
+            try:
+                template_key = (data.get('template') or 'modern').lower()
+                base_url = request.host_url
+                pdf_bytes = asyncio.run(_render_pdf_via_playwright(base_url, data, template_key))
+                return send_file(BytesIO(pdf_bytes), as_attachment=True, download_name=f"{data.get('personalInfo', {}).get('fullName', 'Resume')}.pdf", mimetype='application/pdf')
+            except Exception:
+                # Fall back to ReportLab if Playwright errors
+                pass
+
+        # Fallback: ReportLab
         pdf_buffer = generate_pdf(data)
-        
-        # Return PDF as response
-        return send_file(
-            pdf_buffer,
-            as_attachment=True,
-            download_name=f"{data.get('personalInfo', {}).get('fullName', 'Resume')}.pdf",
-            mimetype='application/pdf'
-        )
-        
+        return send_file(pdf_buffer, as_attachment=True, download_name=f"{data.get('personalInfo', {}).get('fullName', 'Resume')}.pdf", mimetype='application/pdf')
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
