@@ -5,7 +5,7 @@ from docx import Document
 import os
 import requests
 from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, ListFlowable, ListItem
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
@@ -93,7 +93,8 @@ resume_prompts = {
         "Instruction 2: Emphasize measurable outcomes and use action verbs.\n"
         "Instruction 3: Quantify results and highlight transferable skills.\n"
         "Instruction 4: Do NOT add employers, tools, or responsibilities not present in the user's text.\n"
-        "Instruction 5: Return only the single best version for the resume.\n"
+        "Instruction 5: Capitalize the first letter of every sentence and proper nouns.\n"
+        "Instruction 6: Return only the single best version for the resume.\n"
         "Notes: Follow all Global Resume Rules."
     ),
     "skills": (
@@ -115,7 +116,8 @@ resume_prompts = {
         "Instruction 1: Rewrite in 50–100 words. No headings; single block.\n"
         "Instruction 2: Clearly present degrees, certifications, and relevant coursework.\n"
         "Instruction 3: Focus on what supports career goals. Do NOT add schools, degrees, years, or awards not present.\n"
-        "Instruction 4: Return only the single best version for the resume.\n"
+        "Instruction 4: Capitalize the first letter of every sentence and proper nouns.\n"
+        "Instruction 5: Return only the single best version for the resume.\n"
         "Notes: Follow all Global Resume Rules."
     ),
     "projects": (
@@ -323,6 +325,19 @@ def enhance_section(section_name, user_input):
                     capitalized_parts.append(part)
             
             enhanced_text = '\n\n'.join(capitalized_parts)
+
+        # Post-process experience and education: capitalize first letters of sentences
+        if section_key in ("experience", "education"):
+            sentences = re.split(r'(?<=[.!?])\s+', enhanced_text)
+            fixed = []
+            for s in sentences:
+                s = s.strip()
+                if not s:
+                    continue
+                if s and not s[0].isupper():
+                    s = s[0].upper() + s[1:]
+                fixed.append(s)
+            enhanced_text = ' '.join(fixed)
 
         # Normalize skills output to comma-separated list without labels
         if section_key == "skills":
@@ -680,8 +695,21 @@ def generate_pdf(resume_data):
     template = (resume_data.get('template') or 'modern').lower()
 
     # Create styles, theme colors vary by template
-    primary_color = colors.HexColor('#2563eb') if template == 'modern' else colors.HexColor('#0ea5e9')
-    heading_color = colors.HexColor('#1e40af') if template == 'modern' else colors.HexColor('#0369a1')
+    if template == 'modern':
+        primary_color = colors.HexColor('#2563eb')
+        heading_color = colors.HexColor('#1e40af')
+    elif template == 'professional':
+        primary_color = colors.HexColor('#0ea5e9')
+        heading_color = colors.HexColor('#0369a1')
+    elif template == 'minimal':
+        primary_color = colors.HexColor('#374151')
+        heading_color = colors.HexColor('#1f2937')
+    elif template == 'elegant':
+        primary_color = colors.HexColor('#7c3aed')
+        heading_color = colors.HexColor('#5b21b6')
+    else:  # default to modern
+        primary_color = colors.HexColor('#2563eb')
+        heading_color = colors.HexColor('#1e40af')
 
     # Create custom styles
     title_style = ParagraphStyle(
@@ -696,11 +724,12 @@ def generate_pdf(resume_data):
     heading_style = ParagraphStyle(
         'CustomHeading',
         parent=styles['Heading2'],
-        fontSize=16 if template == 'modern' else 15,
+        fontSize=16 if template in ['modern', 'professional'] else 15,
         spaceAfter=12,
         spaceBefore=20,
         textColor=heading_color,
-        underlineWidth=0 if template == 'modern' else 0,
+        fontName='Helvetica-Bold',
+        underlineWidth=0,
     )
     
     normal_style = ParagraphStyle(
@@ -739,14 +768,16 @@ def generate_pdf(resume_data):
     
     # Professional Summary
     if personal_info.get('summary'):
-        story.append(Paragraph('PROFESSIONAL SUMMARY' if template == 'modern' else 'Professional Summary', heading_style))
+        summary_title = 'PROFESSIONAL SUMMARY' if template == 'modern' else 'Professional Summary'
+        story.append(Paragraph(summary_title, heading_style))
         story.append(Paragraph(personal_info['summary'], normal_style))
         story.append(Spacer(1, 12))
     
     # Work Experience
     experience = resume_data.get('experience', [])
     if experience:
-        story.append(Paragraph('WORK EXPERIENCE' if template == 'modern' else 'Professional Experience', heading_style))
+        exp_title = 'WORK EXPERIENCE' if template == 'modern' else 'Professional Experience'
+        story.append(Paragraph(exp_title, heading_style))
         for exp in experience:
             # Job title and company
             job_info = f"<b>{exp.get('title', '')}</b>"
@@ -770,7 +801,8 @@ def generate_pdf(resume_data):
     # Education
     education = resume_data.get('education', [])
     if education:
-        story.append(Paragraph('EDUCATION', heading_style))
+        edu_title = 'EDUCATION' if template == 'modern' else 'Education'
+        story.append(Paragraph(edu_title, heading_style))
         for edu in education:
             # Degree and school
             edu_info = f"<b>{edu.get('degree', '')}</b>"
@@ -794,15 +826,34 @@ def generate_pdf(resume_data):
     # Skills
     skills = resume_data.get('skills', '')
     if skills.strip():
-        story.append(Paragraph('SKILLS' if template == 'modern' else 'Core Competencies', heading_style))
+        skills_title = 'SKILLS' if template == 'modern' else 'Core Competencies'
+        story.append(Paragraph(skills_title, heading_style))
         story.append(Paragraph(skills, normal_style))
         story.append(Spacer(1, 12))
     
     # Projects
     projects = resume_data.get('projects', '')
     if projects.strip():
-        story.append(Paragraph('PROJECTS' if template == 'modern' else 'Key Projects', heading_style))
-        story.append(Paragraph(projects, normal_style))
+        projects_title = 'PROJECTS' if template == 'modern' else 'Key Projects'
+        story.append(Paragraph(projects_title, heading_style))
+        # Split into separate project entries on blank lines
+        project_entries = [p.strip() for p in re.split(r"\n\s*\n+", projects) if p.strip()]
+        if len(project_entries) <= 1:
+            # Fallback: try splitting by single newlines used as bullets
+            project_entries = [p.strip() for p in re.split(r"\n[-•*]?\s*", projects) if p.strip()]
+        # Build a bulleted list with proper spacing
+        bullet_items = []
+        for entry in project_entries:
+            # Create a paragraph with proper left margin
+            para_style = ParagraphStyle(
+                'ProjectBullet',
+                parent=normal_style,
+                leftIndent=25,
+                spaceAfter=8
+            )
+            bullet_items.append(ListItem(Paragraph(entry, para_style), leftIndent=0, bulletIndent=15))
+        
+        story.append(ListFlowable(bullet_items, bulletType='bullet', start='bulletchar', leftIndent=0, spaceAfter=12))
     
     # Build PDF
     doc.build(story)
