@@ -4,12 +4,54 @@ import { ModernTemplate } from "@/components/resume/templates/ModernTemplate";
 import { ProfessionalTemplate } from "@/components/resume/templates/ProfessionalTemplate";
 import { MinimalTemplate } from "@/components/resume/templates/MinimalTemplate";
 import { ElegantTemplate } from "@/components/resume/templates/ElegantTemplate";
-import { useResume } from "@/context/ResumeContext";
+import type { ResumeData } from "@/pages/Index";
 
 const PrintPage = () => {
   const [params] = useSearchParams();
-  const { resumeData } = useResume();
   const template = (params.get("template") || "modern") as "modern" | "professional" | "minimal" | "elegant";
+  const color = params.get("color") || undefined;
+
+  // Read resume data from localStorage
+  const resumeData = useMemo((): ResumeData => {
+    try {
+      const stored = localStorage.getItem("resumeData");
+      if (!stored) {
+        return {
+          personalInfo: {
+            fullName: "",
+            email: "",
+            phone: "",
+            location: "",
+            linkedin: "",
+            github: "",
+            summary: ""
+          },
+          experience: [],
+          education: [],
+          skills: "",
+          projects: ""
+        };
+      }
+      return JSON.parse(stored);
+    } catch (error) {
+      console.error("Error parsing resume data from localStorage:", error);
+      return {
+        personalInfo: {
+          fullName: "",
+          email: "",
+          phone: "",
+          location: "",
+          linkedin: "",
+          github: "",
+          summary: ""
+        },
+        experience: [],
+        education: [],
+        skills: "",
+        projects: ""
+      };
+    }
+  }, []);
 
   // Signal to headless browser when the page is ready
   useEffect(() => {
@@ -21,39 +63,26 @@ const PrintPage = () => {
     return () => clearTimeout(t);
   }, []);
 
-  // Fallback: if context is empty, try localStorage
-  const effectiveData = useMemo(() => {
-    const hasContextName = Boolean(resumeData?.personalInfo?.fullName);
-    if (hasContextName) return resumeData;
-    try {
-      const raw = localStorage.getItem("resumeData");
-      if (!raw) return resumeData;
-      const parsed = JSON.parse(raw);
-      return parsed || resumeData;
-    } catch {
-      return resumeData;
-    }
-  }, [resumeData]);
-
-  const content = useMemo(() => {
+  // Render only the template without any UI controls
+  const renderTemplate = () => {
     switch (template) {
-      case "modern":
-        return <ModernTemplate resumeData={effectiveData as any} />;
-      case "professional":
-        return <ProfessionalTemplate resumeData={effectiveData as any} />;
-      case "minimal":
-        return <MinimalTemplate resumeData={effectiveData as any} />;
-      case "elegant":
-        return <ElegantTemplate resumeData={effectiveData as any} />;
+      case 'modern':
+        return <ModernTemplate resumeData={resumeData} color={color} />;
+      case 'professional':
+        return <ProfessionalTemplate resumeData={resumeData} color={color} />;
+      case 'minimal':
+        return <MinimalTemplate resumeData={resumeData} color={color} />;
+      case 'elegant':
+        return <ElegantTemplate resumeData={resumeData} color={color} />;
       default:
-        return <ModernTemplate resumeData={effectiveData as any} />;
+        return <ModernTemplate resumeData={resumeData} color={color} />;
     }
-  }, [template, effectiveData]);
+  };
 
   return (
     <div className="min-h-screen bg-white p-10">
       <div id="resume-content" className="max-w-[900px] mx-auto">
-        {content}
+        {renderTemplate()}
       </div>
     </div>
   );

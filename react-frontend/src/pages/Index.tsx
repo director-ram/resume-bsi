@@ -41,6 +41,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState<'builder' | 'multistep' | 'success'>('builder');
   const [selectedTemplate, setSelectedTemplate] = useState<'modern' | 'professional' | 'minimal' | 'elegant'>('modern');
+  const [selectedColor, setSelectedColor] = useState('#2563eb');
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
       fullName: '',
@@ -145,6 +146,7 @@ const Index = () => {
               onCompleteResume={handleCompleteResume}
               onStartMultiStep={handleStartMultiStep}
               selectedTemplate={selectedTemplate}
+              selectedColor={selectedColor}
             />
           </div>
           
@@ -153,7 +155,9 @@ const Index = () => {
             <ResumePreview 
               resumeData={resumeData}
               selectedTemplate={selectedTemplate}
+              selectedColor={selectedColor}
               onTemplateChange={setSelectedTemplate}
+              onColorChange={setSelectedColor}
             />
           </div>
         </main>

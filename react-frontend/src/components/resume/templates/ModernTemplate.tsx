@@ -2,10 +2,23 @@ import type { ResumeData } from "@/pages/Index";
 
 interface ModernTemplateProps {
   resumeData: ResumeData;
+  color?: string;
 }
 
-export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
+export const ModernTemplate = ({ resumeData, color = '#2563eb' }: ModernTemplateProps) => {
   const { personalInfo, experience, education, skills, projects } = resumeData;
+  
+  // Helper function to darken color for gradients
+  const darkenColor = (hex: string, percent: number) => {
+    const num = parseInt(hex.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) - amt;
+    const G = (num >> 8 & 0x00FF) - amt;
+    const B = (num & 0x0000FF) - amt;
+    return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+      (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+      (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+  };
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -24,7 +37,10 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
   return (
     <div className="resume-template modern" id="resume-preview">
       {/* Header with gradient background */}
-      <div className="bg-gradient-primary text-white p-8 text-center -m-8 mb-8 rounded-t-xl">
+      <div 
+        className="text-white p-8 text-center -m-8 mb-8 rounded-t-xl"
+        style={{ background: `linear-gradient(135deg, ${color}, ${darkenColor(color, 20)})` }}
+      >
         <h1 className="text-4xl font-bold mb-2">
           {personalInfo.fullName || 'Your Name'}
         </h1>
@@ -42,7 +58,10 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
       {/* Professional Summary */}
       {personalInfo.summary && (
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary">
+          <h2 
+            className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2"
+            style={{ borderColor: color }}
+          >
             Professional Summary
           </h2>
           <p className="text-gray-700 leading-relaxed text-base font-medium">
@@ -54,7 +73,10 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
       {/* Work Experience */}
       {experience.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary">
+          <h2 
+            className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2"
+            style={{ borderColor: color }}
+          >
             Work Experience
           </h2>
           <div className="space-y-6">
@@ -63,7 +85,7 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h3 className="text-xl font-bold text-foreground">{exp.title}</h3>
-                    <p className="text-primary font-semibold">{exp.company}</p>
+                    <p className="font-semibold" style={{ color: color }}>{exp.company}</p>
                   </div>
                   <div className="text-gray-600 text-sm font-semibold text-right">
                     {formatDate(exp.startDate)} - {exp.isCurrentJob ? 'Present' : formatDate(exp.endDate)}
@@ -83,7 +105,10 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
       {/* Education */}
       {education.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary">
+          <h2 
+            className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2"
+            style={{ borderColor: color }}
+          >
             Education
           </h2>
           <div className="space-y-4">
@@ -92,7 +117,7 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-lg font-bold text-foreground">{edu.degree}</h3>
-                    <p className="text-primary font-semibold">{edu.school}</p>
+                    <p className="font-semibold" style={{ color: color }}>{edu.school}</p>
                     {edu.gpa && <p className="text-sm text-gray-600 font-medium">GPA: {edu.gpa}</p>}
                   </div>
                   <div className="text-gray-600 text-sm font-semibold">
@@ -108,14 +133,18 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
       {/* Skills */}
       {skills.trim() && (
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary">
+          <h2 
+            className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2"
+            style={{ borderColor: color }}
+          >
             Skills
           </h2>
           <div className="flex flex-wrap gap-2">
             {skillsArray.map((skill, index) => (
               <span 
                 key={index} 
-                className="bg-gradient-primary text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm"
+                className="text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm"
+                style={{ background: `linear-gradient(135deg, ${color}, ${darkenColor(color, 20)})` }}
               >
                 {skill}
               </span>
@@ -127,14 +156,17 @@ export const ModernTemplate = ({ resumeData }: ModernTemplateProps) => {
       {/* Projects */}
       {projectsArray.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary">
+          <h2 
+            className="text-2xl font-bold text-foreground mb-4 pb-2 border-b-2"
+            style={{ borderColor: color }}
+          >
             Projects
           </h2>
           <div className="space-y-4">
             {projectsArray.map((project, index) => (
               <div key={index} className="text-gray-700 leading-relaxed text-base">
                 <div className="flex items-start">
-                  <span className="text-primary font-semibold mr-2 mt-1">•</span>
+                  <span className="font-semibold mr-2 mt-1" style={{ color: color }}>•</span>
                   <span>{project}</span>
                 </div>
               </div>

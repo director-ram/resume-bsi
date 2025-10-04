@@ -7,10 +7,11 @@ interface FormControlsProps {
   resumeData: ResumeData;
   onCompleteResume: () => void;
   onStartMultiStep?: () => void;
-  selectedTemplate?: 'modern' | 'professional';
+  selectedTemplate?: 'modern' | 'professional' | 'minimal' | 'elegant';
+  selectedColor?: string;
 }
 
-export const FormControls = ({ resumeData, onCompleteResume, onStartMultiStep, selectedTemplate }: FormControlsProps) => {
+export const FormControls = ({ resumeData, onCompleteResume, onStartMultiStep, selectedTemplate, selectedColor }: FormControlsProps) => {
   const { toast } = useToast();
 
   const downloadPDF = async () => {
@@ -20,7 +21,7 @@ export const FormControls = ({ resumeData, onCompleteResume, onStartMultiStep, s
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...resumeData, template: selectedTemplate || 'modern' }),
+        body: JSON.stringify({ ...resumeData, template: selectedTemplate || 'modern', color: selectedColor || '#2563eb' }),
       });
 
       if (!response.ok) {

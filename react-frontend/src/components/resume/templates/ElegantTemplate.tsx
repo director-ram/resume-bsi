@@ -2,9 +2,10 @@ import type { ResumeData } from "@/pages/Index";
 
 interface ElegantTemplateProps {
   resumeData: ResumeData;
+  color?: string;
 }
 
-export const ElegantTemplate = ({ resumeData }: ElegantTemplateProps) => {
+export const ElegantTemplate = ({ resumeData, color = '#7c3aed' }: ElegantTemplateProps) => {
   const { personalInfo, experience, education, skills, projects } = resumeData;
 
   const formatDate = (dateStr: string) => {
@@ -25,7 +26,13 @@ export const ElegantTemplate = ({ resumeData }: ElegantTemplateProps) => {
     <div className="resume-template elegant" id="resume-preview">
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-8">
         {/* Sidebar */}
-        <aside className="md:sticky md:top-0 h-max rounded-xl p-6 bg-gradient-to-b from-primary/20 via-primary/10 to-transparent border border-primary/20">
+        <aside 
+          className="md:sticky md:top-0 h-max rounded-xl p-6 bg-gradient-to-b to-transparent border"
+          style={{ 
+            background: `linear-gradient(to bottom, ${color}20, ${color}10, transparent)`,
+            borderColor: `${color}20`
+          }}
+        >
           <div className="text-center mb-6">
             <h1 className="text-3xl font-extrabold text-foreground">{personalInfo.fullName || 'Your Name'}</h1>
             <div className="mt-2 text-xs text-muted-foreground space-y-1">
@@ -43,7 +50,10 @@ export const ElegantTemplate = ({ resumeData }: ElegantTemplateProps) => {
               <ul className="space-y-1">
                 {skillsArray.map((skill, i) => (
                   <li key={i} className="text-sm text-foreground/90 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
+                    <span 
+                      className="w-1.5 h-1.5 rounded-full inline-block" 
+                      style={{ backgroundColor: color }}
+                    />
                     {skill}
                   </li>
                 ))}
@@ -88,7 +98,7 @@ export const ElegantTemplate = ({ resumeData }: ElegantTemplateProps) => {
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="text-lg font-semibold text-foreground">{exp.title}</h3>
-                        <p className="text-primary font-medium">{exp.company}</p>
+                        <p className="font-medium" style={{ color: color }}>{exp.company}</p>
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {formatDate(exp.startDate)} - {exp.isCurrentJob ? 'Present' : formatDate(exp.endDate)}

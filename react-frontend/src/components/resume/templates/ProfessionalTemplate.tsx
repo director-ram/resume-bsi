@@ -2,10 +2,23 @@ import type { ResumeData } from "@/pages/Index";
 
 interface ProfessionalTemplateProps {
   resumeData: ResumeData;
+  color?: string;
 }
 
-export const ProfessionalTemplate = ({ resumeData }: ProfessionalTemplateProps) => {
+export const ProfessionalTemplate = ({ resumeData, color = '#0ea5e9' }: ProfessionalTemplateProps) => {
   const { personalInfo, experience, education, skills, projects } = resumeData;
+  
+  // Helper function to darken color for gradients
+  const darkenColor = (hex: string, percent: number) => {
+    const num = parseInt(hex.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) - amt;
+    const G = (num >> 8 & 0x00FF) - amt;
+    const B = (num & 0x0000FF) - amt;
+    return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+      (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+      (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+  };
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -24,7 +37,7 @@ export const ProfessionalTemplate = ({ resumeData }: ProfessionalTemplateProps) 
   return (
     <div className="resume-template professional" id="resume-preview">
       {/* Professional Header */}
-      <div className="border-b-4 border-primary pb-6 mb-8">
+      <div className="border-b-4 pb-6 mb-8" style={{ borderColor: color }}>
         <h1 className="text-4xl font-bold text-foreground mb-2">
           {personalInfo.fullName || 'Your Name'}
         </h1>
@@ -65,7 +78,10 @@ export const ProfessionalTemplate = ({ resumeData }: ProfessionalTemplateProps) 
           <h2 className="text-2xl font-bold text-foreground mb-4 uppercase tracking-wide">
             Professional Summary
           </h2>
-          <p className="text-gray-700 leading-relaxed bg-muted/30 p-4 rounded-lg border-l-4 border-primary text-base font-medium">
+          <p 
+            className="text-gray-700 leading-relaxed bg-muted/30 p-4 rounded-lg border-l-4 text-base font-medium"
+            style={{ borderLeftColor: color }}
+          >
             {personalInfo.summary}
           </p>
         </div>
@@ -79,11 +95,15 @@ export const ProfessionalTemplate = ({ resumeData }: ProfessionalTemplateProps) 
           </h2>
           <div className="space-y-6">
             {experience.map((exp) => (
-              <div key={exp.id} className="bg-muted/30 p-6 rounded-lg border-l-4 border-primary">
+              <div 
+                key={exp.id} 
+                className="bg-muted/30 p-6 rounded-lg border-l-4"
+                style={{ borderLeftColor: color }}
+              >
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <h3 className="text-xl font-bold text-foreground">{exp.title}</h3>
-                    <p className="text-lg text-primary font-semibold">{exp.company}</p>
+                    <p className="text-lg font-semibold" style={{ color: color }}>{exp.company}</p>
                   </div>
                   <div className="text-gray-600 font-semibold bg-background px-3 py-1 rounded-md border">
                     {formatDate(exp.startDate)} - {exp.isCurrentJob ? 'Present' : formatDate(exp.endDate)}
@@ -112,7 +132,7 @@ export const ProfessionalTemplate = ({ resumeData }: ProfessionalTemplateProps) 
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-lg font-bold text-foreground">{edu.degree}</h3>
-                    <p className="text-primary font-semibold">{edu.school}</p>
+                    <p className="font-semibold" style={{ color: color }}>{edu.school}</p>
                     {edu.gpa && (
                       <p className="text-sm text-gray-600 font-medium">
                         GPA: <span className="text-gray-800 font-semibold">{edu.gpa}</span>
@@ -139,7 +159,10 @@ export const ProfessionalTemplate = ({ resumeData }: ProfessionalTemplateProps) 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {skillsArray.map((skill, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
+                  <div 
+                    className="w-2 h-2 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: color }}
+                  />
                   <span className="text-foreground font-medium text-sm">{skill}</span>
                 </div>
               ))}

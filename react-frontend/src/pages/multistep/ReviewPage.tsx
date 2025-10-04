@@ -11,6 +11,7 @@ const ReviewPage = () => {
   const navigate = useNavigate();
   const { resumeData, progress, setResumeData } = useResume();
   const [selectedTemplate, setSelectedTemplate] = useState<'modern' | 'professional' | 'minimal' | 'elegant'>("modern");
+  const [selectedColor, setSelectedColor] = useState('#2563eb');
 
   const updatePI = (key: keyof typeof resumeData.personalInfo, value: string) => {
     setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, [key]: value } });
@@ -67,7 +68,7 @@ const ReviewPage = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...resumeData, template: selectedTemplate }),
+        body: JSON.stringify({ ...resumeData, template: selectedTemplate, color: selectedColor }),
       });
 
       if (!response.ok) {
@@ -239,6 +240,8 @@ const ReviewPage = () => {
               resumeData={resumeData}
               selectedTemplate={selectedTemplate}
               onTemplateChange={setSelectedTemplate}
+              selectedColor={selectedColor}
+              onColorChange={setSelectedColor}
             />
           </div>
         </main>

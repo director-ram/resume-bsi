@@ -2,9 +2,10 @@ import type { ResumeData } from "@/pages/Index";
 
 interface MinimalTemplateProps {
   resumeData: ResumeData;
+  color?: string;
 }
 
-export const MinimalTemplate = ({ resumeData }: MinimalTemplateProps) => {
+export const MinimalTemplate = ({ resumeData, color = '#374151' }: MinimalTemplateProps) => {
   const { personalInfo, experience, education, skills, projects } = resumeData;
 
   const formatDate = (dateStr: string) => {
