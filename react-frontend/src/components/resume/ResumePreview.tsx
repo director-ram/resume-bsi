@@ -24,21 +24,21 @@ export const ResumePreview = ({
 }: ResumePreviewProps) => {
   return (
     <div className="bg-glass-bg backdrop-blur-glass rounded-3xl shadow-glass border border-glass-border h-full flex flex-col overflow-hidden">
-      <div className="bg-gradient-primary p-6 text-white flex justify-between items-center flex-shrink-0 rounded-t-3xl">
-        <h2 className="text-2xl font-bold">Resume Preview</h2>
-        <div className="flex gap-2 items-center">
+      <div className="bg-gradient-primary p-4 text-white flex flex-col gap-3 flex-shrink-0 rounded-t-3xl">
+        <h2 className="text-xl font-bold text-center">Resume Preview</h2>
+        <div className="flex gap-2 items-center justify-center flex-wrap">
           <ColorPicker value={selectedColor} onChange={onColorChange} />
           <Select value={selectedTemplate} onValueChange={onTemplateChange}>
-          <SelectTrigger className="w-48 bg-white/90 text-foreground border-0 shadow-button">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="modern">Modern Template</SelectItem>
-            <SelectItem value="professional">Professional Template</SelectItem>
-            <SelectItem value="minimal">Minimal Template</SelectItem>
-            <SelectItem value="elegant">Elegant Template</SelectItem>
-          </SelectContent>
-        </Select>
+            <SelectTrigger className="w-40 bg-white/90 text-gray-800 border-0 shadow-button">
+              <SelectValue placeholder="Select Template" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="modern">Modern Template</SelectItem>
+              <SelectItem value="professional">Professional Template</SelectItem>
+              <SelectItem value="minimal">Minimal Template</SelectItem>
+              <SelectItem value="elegant">Elegant Template</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

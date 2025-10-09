@@ -3,7 +3,7 @@ from flask_cors import CORS
 from groq import Groq
 from docx import Document
 import os
-import requests
+import requests  # Still needed for health check endpoint
 import re
 import logging
 import traceback
@@ -26,57 +26,131 @@ except Exception:
 # DOCX Generation Function
 # --------------------------------
 def save_resume_docx(resume_data):
-    """Generate and save a DOCX file from resume data."""
+    """Generate and save a DOCX file from resume data with template and color support."""
     doc = Document()
     
-    # Add title
+    # Get template and color info
+    template = resume_data.get('template', 'modern')
+    color = resume_data.get('color', '')
+    
+    # Add title with template-specific styling
     title = doc.add_heading('Resume', 0)
     
     # Add personal information
-    if 'personalInfo' in resume_data:
+    if 'personalInfo' in resume_data and resume_data['personalInfo']:
         personal = resume_data['personalInfo']
-        doc.add_heading('Personal Information', level=1)
         if personal.get('fullName'):
-            doc.add_paragraph(f"Name: {personal['fullName']}")
+            doc.add_heading(personal['fullName'], level=1)
+        
+        # Contact information
+        contact_info = []
         if personal.get('email'):
-            doc.add_paragraph(f"Email: {personal['email']}")
+            contact_info.append(personal['email'])
         if personal.get('phone'):
-            doc.add_paragraph(f"Phone: {personal['phone']}")
+            contact_info.append(personal['phone'])
         if personal.get('location'):
-            doc.add_paragraph(f"Location: {personal['location']}")
+            contact_info.append(personal['location'])
+        if personal.get('linkedin'):
+            contact_info.append(personal['linkedin'])
+        
+        if contact_info:
+            doc.add_paragraph(' • '.join(contact_info))
+        
         if personal.get('summary'):
-            doc.add_paragraph(f"Summary: {personal['summary']}")
+            doc.add_heading('Professional Summary', level=2)
+            doc.add_paragraph(personal['summary'])
     
     # Add experience
     if 'experience' in resume_data and resume_data['experience']:
-        doc.add_heading('Experience', level=1)
+        experience_title = 'Professional Experience' if template == 'professional' else 'Work Experience'
+        doc.add_heading(experience_title, level=2)
+        
         for exp in resume_data['experience']:
-            if exp.get('position') and exp.get('company'):
-                doc.add_paragraph(f"{exp['position']} at {exp['company']}")
+            if exp.get('title') or exp.get('company'):
+                # Job title and company
+                title_text = exp.get('title', 'Position')
+                company_text = exp.get('company', 'Company')
+                doc.add_paragraph(f"{title_text} at {company_text}", style='Heading 3')
+                
+                # Dates
+                if exp.get('startDate') or exp.get('endDate'):
+                    start_date = exp.get('startDate', '')
+                    end_date = exp.get('endDate', '')
+                    if exp.get('current'):
+                        date_text = f"{start_date} - Present"
+                    else:
+                        date_text = f"{start_date} - {end_date}" if end_date else start_date
+                    doc.add_paragraph(date_text, style='Intense Quote')
+                
+                # Description
                 if exp.get('description'):
                     doc.add_paragraph(exp['description'])
+                
+                doc.add_paragraph()  # Add spacing
     
     # Add education
     if 'education' in resume_data and resume_data['education']:
-        doc.add_heading('Education', level=1)
+        education_title = 'Education' if template in ['modern', 'professional'] else 'Academic Background'
+        doc.add_heading(education_title, level=2)
+        
         for edu in resume_data['education']:
-            if edu.get('degree') and edu.get('school'):
-                doc.add_paragraph(f"{edu['degree']} from {edu['school']}")
+            if edu.get('degree') or edu.get('school'):
+                # Degree and school
+                degree_text = edu.get('degree', 'Degree')
+                school_text = edu.get('school', 'Institution')
+                field_text = edu.get('field', '')
+                
+                if field_text:
+                    degree_line = f"{degree_text} in {field_text}"
+                else:
+                    degree_line = degree_text
+                
+                doc.add_paragraph(f"{degree_line} from {school_text}", style='Heading 3')
+                
+                # Graduation date and GPA
+                grad_info = []
+                if edu.get('graduationDate'):
+                    grad_info.append(f"Graduated: {edu['graduationDate']}")
+                if edu.get('gpa'):
+                    grad_info.append(f"GPA: {edu['gpa']}")
+                
+                if grad_info:
+                    doc.add_paragraph(' • '.join(grad_info), style='Intense Quote')
+                
+                # Additional details
                 if edu.get('description'):
                     doc.add_paragraph(edu['description'])
+                
+                doc.add_paragraph()  # Add spacing
     
     # Add skills
     if 'skills' in resume_data and resume_data['skills']:
-        doc.add_heading('Skills', level=1)
+        skills_title = 'Core Competencies' if template == 'professional' else 'Skills'
+        doc.add_heading(skills_title, level=2)
         doc.add_paragraph(resume_data['skills'])
     
     # Add projects
     if 'projects' in resume_data and resume_data['projects']:
-        doc.add_heading('Projects', level=1)
-        doc.add_paragraph(resume_data['projects'])
+        projects_title = 'Key Projects' if template in ['professional', 'minimal'] else 'Projects'
+        doc.add_heading(projects_title, level=2)
+        
+        # Split projects by double newlines or bullet points
+        projects_text = resume_data['projects']
+        if '\n\n' in projects_text:
+            projects = [p.strip() for p in projects_text.split('\n\n') if p.strip()]
+        else:
+            projects = [p.strip() for p in projects_text.split('\n') if p.strip()]
+        
+        for project in projects:
+            if project:
+                doc.add_paragraph(f"• {project}")
     
-    # Save to temporary file
-    filename = 'resume.docx'
+    # Save to temporary file with template and color info in filename
+    filename = f'resume_{template}'
+    if color:
+        filename += f'_{color.replace("#", "")}'
+    filename += '.docx'
+    
     doc.save(filename)
     return filename
 
@@ -86,10 +160,13 @@ def save_resume_docx(resume_data):
 def _load_env_file(path: str = ".env") -> None:
     try:
         if not os.path.exists(path):
+            print(f"Warning: .env file not found at {path}")
             return
+        
         # Try different encodings to handle BOM and encoding issues
         encodings = ['utf-8-sig', 'utf-8', 'latin-1', 'cp1252']
         content = None
+        
         for encoding in encodings:
             try:
                 with open(path, "r", encoding=encoding) as f:
@@ -101,6 +178,7 @@ def _load_env_file(path: str = ".env") -> None:
         if content is None:
             return
             
+        variables_loaded = 0
         for raw in content.splitlines():
             line = raw.strip()
             if not line or line.startswith("#"):
@@ -112,7 +190,14 @@ def _load_env_file(path: str = ".env") -> None:
             val = val.strip().strip('"').strip("'")
             if key and key not in os.environ:
                 os.environ[key] = val
-    except Exception:
+                variables_loaded += 1
+        
+        # Only print if variables were actually loaded
+        if variables_loaded > 0:
+            print(f"Loaded {variables_loaded} environment variables from .env")
+        
+    except Exception as e:
+        print(f"Error loading .env file: {e}")
         # Fail silently; env can still be provided via real env vars
         pass
 
@@ -121,8 +206,18 @@ _load_env_file()
 app = Flask(__name__)
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Reduce Groq client logging verbosity
+import httpx
+import httpcore
+httpx_logger = logging.getLogger("httpx")
+httpx_logger.setLevel(logging.WARNING)
+httpcore_logger = logging.getLogger("httpcore")
+httpcore_logger.setLevel(logging.WARNING)
+groq_logger = logging.getLogger("groq")
+groq_logger.setLevel(logging.WARNING)
 
 # Simple CORS configuration
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -249,31 +344,42 @@ resume_prompts = {
 # -------------------------------
 # Helper Functions
 # -------------------------------
-def _call_groq_chat(model_name: str, prompt: str, timeout_seconds: int = 90) -> str:
+def _call_groq_chat(model_name: str, prompt: str, timeout_seconds: int = 90, stream: bool = False) -> str:
     """Call Groq Chat Completions API with a single user message and return text."""
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": model_name,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.3,
-        "max_tokens": 512,
-        "stream": False,
-    }
-    resp = requests.post(url, headers=headers, json=payload, timeout=timeout_seconds)
-    resp.raise_for_status()
-    data = resp.json()
-    content = (
-        (data.get("choices") or [{}])[0]
-        .get("message", {})
-        .get("content", "")
-    )
-    return content or ""
+    if not client:
+        raise Exception("Groq client not initialized")
+    
+    try:
+        completion = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.3,
+            max_completion_tokens=1024,
+            top_p=1,
+            stream=stream,
+            stop=None
+        )
+        
+        if stream:
+            # Handle streaming response
+            content = ""
+            for chunk in completion:
+                if chunk.choices[0].delta.content:
+                    content += chunk.choices[0].delta.content
+            return content
+        else:
+            # Handle non-streaming response
+            content = completion.choices[0].message.content or ""
+            return content
+        
+    except Exception as e:
+        logger.error(f"Groq API call failed: {e}")
+        raise Exception(f"Groq API call failed: {e}")
 
 
 def enhance_section(section_name, user_input):
@@ -418,6 +524,19 @@ def enhance_section(section_name, user_input):
             
             enhanced_text = '\n\n'.join(capitalized_parts)
 
+        # Post-process summary to capitalize names properly
+        if section_key == "summary":
+            # Find and capitalize names (simple pattern: first letter of each word)
+            words = enhanced_text.split()
+            capitalized_words = []
+            for word in words:
+                if word and word[0].islower() and len(word) > 1:
+                    # Capitalize first letter of each word
+                    capitalized_words.append(word[0].upper() + word[1:])
+                else:
+                    capitalized_words.append(word)
+            enhanced_text = ' '.join(capitalized_words)
+
         # Post-process experience and education: capitalize first letters of sentences
         if section_key in ("experience", "education"):
             sentences = re.split(r'(?<=[.!?])\s+', enhanced_text)
@@ -430,6 +549,99 @@ def enhance_section(section_name, user_input):
                     s = s[0].upper() + s[1:]
                 fixed.append(s)
             enhanced_text = ' '.join(fixed)
+
+        # Post-process experience: capitalize company names and job titles
+        if section_key == "experience":
+            # Split into individual experiences
+            exp_parts = enhanced_text.split('\n\n')
+            capitalized_parts = []
+            
+            for part in exp_parts:
+                part = part.strip()
+                if part:
+                    # Look for patterns like "job title at company name"
+                    # Capitalize job titles and company names
+                    lines = part.split('\n')
+                    capitalized_lines = []
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line:
+                            # Capitalize first letter of the line
+                            if line and not line[0].isupper():
+                                line = line[0].upper() + line[1:]
+                            
+                            # Look for "at" pattern and capitalize both sides
+                            if ' at ' in line.lower():
+                                parts = line.split(' at ', 1)
+                                if len(parts) == 2:
+                                    job_title = parts[0].strip()
+                                    company_name = parts[1].strip()
+                                    
+                                    # Capitalize job title words
+                                    job_title = ' '.join(word.capitalize() for word in job_title.split())
+                                    
+                                    # Capitalize company name words
+                                    company_name = ' '.join(word.capitalize() for word in company_name.split())
+                                    
+                                    line = f"{job_title} at {company_name}"
+                            
+                            capitalized_lines.append(line)
+                    
+                    part = '\n'.join(capitalized_lines)
+                    capitalized_parts.append(part)
+            
+            enhanced_text = '\n\n'.join(capitalized_parts)
+
+        # Post-process education: capitalize degree names and school names
+        if section_key == "education":
+            # Split into individual education entries
+            edu_parts = enhanced_text.split('\n\n')
+            capitalized_parts = []
+            
+            for part in edu_parts:
+                part = part.strip()
+                if part:
+                    # Look for patterns like "degree from school name"
+                    lines = part.split('\n')
+                    capitalized_lines = []
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line:
+                            # Capitalize first letter of the line
+                            if line and not line[0].isupper():
+                                line = line[0].upper() + line[1:]
+                            
+                            # Look for "from" pattern and capitalize both sides
+                            if ' from ' in line.lower():
+                                parts = line.split(' from ', 1)
+                                if len(parts) == 2:
+                                    degree_name = parts[0].strip()
+                                    school_name = parts[1].strip()
+                                    
+                                    # Capitalize degree name words (handle special cases)
+                                    degree_words = degree_name.split()
+                                    capitalized_degree_words = []
+                                    for word in degree_words:
+                                        # Handle common degree abbreviations and special words
+                                        if word.lower() in ['of', 'in', 'and', 'the', 'for']:
+                                            capitalized_degree_words.append(word.lower())
+                                        else:
+                                            capitalized_degree_words.append(word.capitalize())
+                                    degree_name = ' '.join(capitalized_degree_words)
+                                    
+                                    # Capitalize school name words
+                                    school_name = ' '.join(word.capitalize() for word in school_name.split())
+                                    
+                                    line = f"{degree_name} from {school_name}"
+                            
+                            capitalized_lines.append(line)
+                    
+                    part = '\n'.join(capitalized_lines)
+                    capitalized_parts.append(part)
+            
+            enhanced_text = '\n\n'.join(capitalized_parts)
 
         # Normalize skills output to comma-separated list without labels
         if section_key == "skills":
@@ -550,9 +762,17 @@ def enhance_ajax():
 
         section_name = data.get('section')
         content = data.get('content')
+        # Optional validation data
+        validation_data = data.get('validation', {})
 
         if not section_name or not content:
             return jsonify({'success': False, 'error': 'Missing section name or content'}), 400
+
+        # Validate phone number if provided
+        if validation_data.get('phone'):
+            is_valid, error_message = _validate_phone_number(validation_data['phone'])
+            if not is_valid:
+                return jsonify({'success': False, 'error': error_message}), 400
 
         enhanced_content = enhance_section(section_name, content)
 
@@ -560,6 +780,18 @@ def enhance_ajax():
 
     except Exception as e:
         return jsonify({'success': False, 'error': f'Server error: {str(e)}'}), 500
+
+def _validate_phone_number(phone: str) -> tuple[bool, str]:
+    """Validate phone number format (including country code)."""
+    # Remove all non-digit characters
+    digits_only = re.sub(r'\D', '', phone)
+    
+    if len(digits_only) < 10:
+        return False, 'Phone number must have at least 10 digits (including country code)'
+    elif len(digits_only) > 20:
+        return False, 'Phone number cannot exceed 20 digits (including country code)'
+    else:
+        return True, ''
 
 @app.route("/download")
 def download():
@@ -570,70 +802,63 @@ def download():
 
 @app.route("/api/generate", methods=["POST"])
 def api_generate_docx():
-    """Generate a DOCX from provided resume data; optionally enhance first.
+    """Generate a DOCX from provided resume data with template and color support.
 
     Expected JSON body:
     {
-      "personalInfo": { "summary": "..." },
+      "personalInfo": { "fullName": "...", "email": "...", "summary": "..." },
       "experience": [ { "title": "...", "company": "...", "description": "..." } ],
       "education": [ { "degree": "...", "school": "..." } ],
       "skills": "...",
       "projects": "...",
+      "template": "modern|professional|minimal|elegant",
+      "color": "#hexcolor",
       "enhance": true
     }
     """
     try:
         data = request.get_json(force=True, silent=True) or {}
         enhance_flag = bool(data.get("enhance", True))
+        template = data.get("template", "modern")
+        color = data.get("color", "")
 
-        # Flatten arrays into text blocks similar to legacy template behavior
-        def join_experience(items):
-            lines = []
-            for it in items or []:
-                title = it.get("title", "").strip()
-                company = it.get("company", "").strip()
-                desc = it.get("description", "").strip()
-                header = f"{title} at {company}".strip()
-                lines.append(f"{header}: {desc}" if header else desc)
-            return "\n\n".join([l for l in lines if l])
-
-        def join_education(items):
-            lines = []
-            for it in items or []:
-                degree = it.get("degree", "").strip()
-                school = it.get("school", "").strip()
-                grad = it.get("graduationDate", "").strip()
-                gpa = it.get("gpa", "").strip()
-                parts = [p for p in [f"{degree} from {school}", f"Graduated: {grad}" if grad else "", f"GPA: {gpa}" if gpa else ""] if p]
-                lines.append(". ".join(parts))
-            return "\n\n".join([l for l in lines if l])
-
-        summary = (data.get("personalInfo", {}) or {}).get("summary", "")
-        experience_text = join_experience(data.get("experience", []))
-        education_text = join_education(data.get("education", []))
-        skills_text = data.get("skills", "")
-        projects_text = data.get("projects", "")
-
-        sections = {
-            "summary": summary,
-            "experience": experience_text,
-            "education": education_text,
-            "skills": skills_text,
-            "projects": projects_text,
+        # Create structured resume data similar to PDF generation
+        resume_data = {
+            "personalInfo": data.get("personalInfo", {}),
+            "experience": data.get("experience", []),
+            "education": data.get("education", []),
+            "skills": data.get("skills", ""),
+            "projects": data.get("projects", ""),
+            "template": template,
+            "color": color
         }
 
-        final_sections = {}
-        for key, value in sections.items():
-            if enhance_flag:
-                final_sections[key] = enhance_section(key, value or "")
-        
-                final_sections[key] = value or ""
+        # Enhance content if requested
+        if enhance_flag:
+            if resume_data["personalInfo"].get("summary"):
+                resume_data["personalInfo"]["summary"] = enhance_section("summary", resume_data["personalInfo"]["summary"])
+            
+            if resume_data["skills"]:
+                resume_data["skills"] = enhance_section("skills", resume_data["skills"])
+            
+            if resume_data["projects"]:
+                resume_data["projects"] = enhance_section("projects", resume_data["projects"])
+            
+            # Enhance experience descriptions
+            for exp in resume_data["experience"]:
+                if exp.get("description"):
+                    exp["description"] = enhance_section("experience", exp["description"])
+            
+            # Enhance education descriptions
+            for edu in resume_data["education"]:
+                if edu.get("description"):
+                    edu["description"] = enhance_section("education", edu["description"])
 
-        filename = save_resume_docx(final_sections)
+        filename = save_resume_docx(resume_data)
         return send_file(filename, as_attachment=True)
 
     except Exception as e:
-        logger.error(f"Download error: {str(e)}")
+        logger.error(f"DOCX generation error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -1035,7 +1260,13 @@ async def _render_pdf_via_playwright(base_url: str, resume_data: dict, template_
         )
         
         color_param = resume_data.get('color', '')
-        url = f"{base_url.rstrip('/')}/app/print?template={template_key}&color={color_param}"
+        print(f"DEBUG: Color parameter: {color_param}")
+        
+        # URL encode the color parameter
+        import urllib.parse
+        encoded_color = urllib.parse.quote(color_param) if color_param else ''
+        url = f"{base_url.rstrip('/')}/app/print?template={template_key}&color={encoded_color}"
+        print(f"DEBUG: Generated URL: {url}")
         await page.goto(url, wait_until='networkidle')
         
         try:
@@ -1078,10 +1309,16 @@ if __name__ == "__main__":
     print("=" * 60)
     print("Resume Builder Server Starting")
     print("=" * 60)
-    print(f"🤖 Model: {GROQ_MODEL}")
-    print(f"🔑 API Key: {' Configured' if GROQ_API_KEY else '❌ Missing'}")
-    print(f"🔗 Groq Client: {'Connected' if client else '❌ Failed'}")
-    print(f"🌐 Server: http://localhost:5000")
+    print(f"Model: {GROQ_MODEL}")
+    print(f"API Key: {'Configured' if GROQ_API_KEY else 'Missing'}")
+    print(f"Groq Client: {'Connected' if client else 'Failed'}")
+    print(f"Server: http://localhost:5000")
     print("=" * 60)
+    
+    # Debug environment loading
+    print(f"Environment GROQ_API_KEY loaded: {bool(GROQ_API_KEY)}")
+    if GROQ_API_KEY:
+        print(f"API Key length: {len(GROQ_API_KEY)}")
+        print(f"API Key starts with: {GROQ_API_KEY[:10]}...")
 
     app.run(debug=True, host='0.0.0.0', port=5000)

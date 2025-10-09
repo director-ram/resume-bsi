@@ -27,7 +27,20 @@ export const EducationForm = ({ data, onChange }: EducationFormProps) => {
     onChange(data.filter(edu => edu.id !== id));
   };
 
+  // Capitalize first letter of each word
+  const capitalizeWords = (text: string): string => {
+    return text
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   const updateEducation = (id: string, field: keyof ResumeData['education'][0], value: string) => {
+    // Auto-capitalize degree and school fields
+    if (field === 'degree' || field === 'school') {
+      value = capitalizeWords(value);
+    }
+    
     onChange(data.map(edu => 
       edu.id === id ? { ...edu, [field]: value } : edu
     ));
@@ -121,46 +134,70 @@ export const EducationForm = ({ data, onChange }: EducationFormProps) => {
               </div>
             </Card>
           ))}
-          <div className="text-center mt-2">
-            <Button
-              onClick={async () => {
-                const lines = data.map(edu => `${edu.degree} from ${edu.school}. ${edu.gpa ? `GPA: ${edu.gpa}. ` : ''}Graduated: ${edu.graduationDate}`.trim()).join('\n\n');
-                try {
-                  const res = await fetch('/enhance', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ section: 'education', content: lines })
-                  });
-                  const json = await res.json();
-                  if (json.success && json.enhanced_content) {
-                    const items = String(json.enhanced_content).split('\n\n');
-                    const updated = [...data];
-                    items.forEach((line, idx) => {
-                      if (!updated[idx]) return;
-                      const match = line.match(/^\s*(.*?)\s+from\s+(.*?)\.?\s*(.*)$/i);
-                      if (match) {
-                        const [, degreeVal, schoolVal] = match;
-                        updated[idx] = {
-                          ...updated[idx],
-                          degree: degreeVal.trim(),
-                          school: schoolVal.trim(),
-                        };
-                      }
-                    });
-                    onChange(updated);
-                  }
-                } catch {}
-              }}
-              variant="outline"
-              size="sm"
-              className="bg-gradient-warning hover:shadow-button border-0 text-white"
-            >
-              <Sparkles className="w-4 h-4 mr-1" />
-              Enhance Education
-            </Button>
-          </div>
         </div>
       )}
+      
+      {/* Enhance button always visible */}
+      <div className="text-center mt-4">
+        <Button
+          onClick={async () => {
+            if (data.length === 0) {
+              alert('Please add at least one education entry before enhancing.');
+              return;
+            }
+            
+            const lines = data.map(edu => `${edu.degree} from ${edu.school}. ${edu.gpa ? `GPA: ${edu.gpa}. ` : ''}Graduated: ${edu.graduationDate}`.trim()).join('\n\n');
+            try {
+              const res = await fetch('/enhance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ section: 'education', content: lines })
+              });
+              const json = await res.json();
+              if (json.success && json.enhanced_content) {
+                const items = String(json.enhanced_content).split('\n\n');
+                const updated = [...data];
+                items.forEach((line, idx) => {
+                  if (!updated[idx]) return;
+                  
+                  // Look for "from" pattern to extract degree and school
+                  const fromMatch = line.match(/^\s*(.*?)\s+from\s+(.*?)(?:\s*\.|$)/i);
+                  if (fromMatch) {
+                    const [, degreeVal, schoolVal] = fromMatch;
+                    updated[idx] = {
+                      ...updated[idx],
+                      degree: degreeVal.trim(),
+                      school: schoolVal.trim(),
+                    };
+                  } else {
+                    // If no "from" pattern, try to extract from the whole line
+                    // Split by common separators and take first two parts
+                    const parts = line.split(/[,\-–]/);
+                    if (parts.length >= 2) {
+                      updated[idx] = {
+                        ...updated[idx],
+                        degree: parts[0].trim(),
+                        school: parts[1].trim(),
+                      };
+                    }
+                  }
+                });
+                onChange(updated);
+              } else if (json.error) {
+                alert(json.error);
+              }
+            } catch (error) {
+              alert('Enhancement failed. Please try again.');
+            }
+          }}
+          variant="outline"
+          size="sm"
+          className="bg-gradient-warning hover:shadow-button border-0 text-white"
+        >
+          <Sparkles className="w-4 h-4 mr-1" />
+          Enhance Education
+        </Button>
+      </div>
     </Card>
   );
 };

@@ -10,6 +10,10 @@ const PrintPage = () => {
   const [params] = useSearchParams();
   const template = (params.get("template") || "modern") as "modern" | "professional" | "minimal" | "elegant";
   const color = params.get("color") || undefined;
+  
+  // Debug logging
+  console.log('PrintPage - Template:', template);
+  console.log('PrintPage - Color:', color);
 
   // Read resume data from localStorage
   const resumeData = useMemo((): ResumeData => {

@@ -60,6 +60,11 @@
     --gradient-warning: linear-gradient(135deg, hsl(var(--warning)), hsl(var(--warning-light)));
     --gradient-background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-variant)) 50%, hsl(var(--primary)) 100%);
     
+    /* Glass morphism effects */
+    --glass-bg: hsl(var(--glass-bg));
+    --glass-border: hsl(var(--glass-border));
+    --backdrop-blur-glass: var(--backdrop-blur);
+    
     /* Shadows */
     --shadow-glass: 0 20px 40px hsl(0 0% 0% / 0.1);
     --shadow-card: 0 8px 25px hsl(0 0% 0% / 0.08);
@@ -111,11 +116,12 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 
   /* Custom scrollbar styling to match purple theme */
@@ -148,5 +154,54 @@
   * {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--primary)) hsl(var(--primary) / 0.1);
+  }
+
+  /* Custom utility classes for gradients and effects */
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .bg-gradient-success {
+    background: var(--gradient-success);
+  }
+  
+  .bg-gradient-warning {
+    background: var(--gradient-warning);
+  }
+  
+  .bg-glass-bg {
+    background-color: var(--glass-bg);
+  }
+  
+  .border-glass-border {
+    border-color: var(--glass-border);
+  }
+  
+  .backdrop-blur-glass {
+    backdrop-filter: var(--backdrop-blur-glass);
+  }
+  
+  .shadow-glass {
+    box-shadow: var(--shadow-glass);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .shadow-button {
+    box-shadow: var(--shadow-button);
+  }
+  
+  .shadow-success {
+    box-shadow: var(--shadow-success);
+  }
+  
+  .hover\:shadow-button:hover {
+    box-shadow: var(--shadow-button-hover);
+  }
+  
+  .hover\:shadow-success:hover {
+    box-shadow: var(--shadow-success-hover);
   }
 }

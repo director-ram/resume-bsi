@@ -13,7 +13,8 @@ interface ResumeFormProps {
   onResumeDataChange: (data: ResumeData) => void;
   onCompleteResume: () => void;
   onStartMultiStep?: () => void;
-  selectedTemplate?: 'modern' | 'professional';
+  selectedTemplate?: 'modern' | 'professional' | 'minimal' | 'elegant';
+  selectedColor?: string;
 }
 
 export const ResumeForm = ({ 
@@ -21,7 +22,8 @@ export const ResumeForm = ({
   onResumeDataChange, 
   onCompleteResume,
   onStartMultiStep,
-  selectedTemplate
+  selectedTemplate,
+  selectedColor
 }: ResumeFormProps) => {
   const updatePersonalInfo = (personalInfo: ResumeData['personalInfo']) => {
     onResumeDataChange({ ...resumeData, personalInfo });
@@ -91,6 +93,7 @@ export const ResumeForm = ({
         onCompleteResume={onCompleteResume}
         onStartMultiStep={onStartMultiStep}
         selectedTemplate={selectedTemplate}
+        selectedColor={selectedColor}
       />
     </div>
   );

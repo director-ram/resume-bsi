@@ -32,7 +32,20 @@ export const ExperienceForm = ({ data, onChange }: ExperienceFormProps) => {
     onChange(data.filter(exp => exp.id !== id));
   };
 
+  // Capitalize first letter of each word
+  const capitalizeWords = (text: string): string => {
+    return text
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   const updateExperience = (id: string, field: keyof ResumeData['experience'][0], value: any) => {
+    // Auto-capitalize job title and company name fields
+    if (field === 'title' || field === 'company') {
+      value = capitalizeWords(value);
+    }
+    
     onChange(data.map(exp => 
       exp.id === id ? { ...exp, [field]: value } : exp
     ));
@@ -51,11 +64,38 @@ export const ExperienceForm = ({ data, onChange }: ExperienceFormProps) => {
       const json = await res.json();
       if (json.success && json.enhanced_content) {
         const enhanced = String(json.enhanced_content);
+        
+        // Try to extract enhanced title and company from the enhanced content
+        const lines = enhanced.split('\n');
+        for (const line of lines) {
+          if (line.toLowerCase().includes(' at ')) {
+            const parts = line.split(' at ', 1);
+            if (parts.length === 2) {
+              const enhancedTitle = parts[0].trim();
+              const enhancedCompany = parts[1].trim();
+              
+              // Update title and company if they were enhanced
+              if (enhancedTitle && enhancedTitle !== experience.title) {
+                updateExperience(id, 'title', enhancedTitle);
+              }
+              if (enhancedCompany && enhancedCompany !== experience.company) {
+                updateExperience(id, 'company', enhancedCompany);
+              }
+              break;
+            }
+          }
+        }
+        
+        // Extract description (after colon)
         const colonIndex = enhanced.indexOf(':');
         const finalText = colonIndex !== -1 ? enhanced.slice(colonIndex + 1).trim() : enhanced;
         updateExperience(id, 'description', finalText);
+      } else if (json.error) {
+        alert(json.error);
       }
-    } catch {}
+    } catch (error) {
+      alert('Enhancement failed. Please try again.');
+    }
   };
 
   return (
